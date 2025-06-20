@@ -1,0 +1,4 @@
+name: sparks_monorepo
+packages:
+  - packages/*
+  - apps/*
