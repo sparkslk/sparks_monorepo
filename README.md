@@ -1,4 +1,5 @@
 <img src = ".\apps\frontend\assets\logowhite.png" class="logo" width="120" title="Sparks"/>
+
 # Sparks Monorepo
 
 A full-stack ADHD management mobile application built with **Flutter (frontend)** and **Dart (backend with PostgreSQL)**, organized as a Dart/Flutter monorepo.
@@ -50,7 +51,7 @@ dart pub global activate melos
 ### 2. Clone the Repository
 
 ```sh
-git clone <your-repo-url>
+git clone https://github.com/sparkslk/sparks_monorepo.git
 cd sparks_monorepo
 ```
 
@@ -115,10 +116,4 @@ flutter run
 - Located in `packages/shared`.
 
 ---
-
-## Development Tips
-
-- Use the **Project** view in Android Studio or VS Code to see the full monorepo structure.
-- For local backend access from an emulator, always use `10.0.2.2` as the host.
-- Check backend logs for errors during development.
-- Use Postman to test API endpoints independently.
+© All Right Reserved - Sparks
