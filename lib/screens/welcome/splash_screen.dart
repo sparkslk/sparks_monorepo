@@ -41,7 +41,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     ),
                     Text(
                       'Empowering ADHD Minds',
-                      style: TextStyle(color: Colors.grey[700], fontSize: 24),
+                      style: TextStyle(fontFamily: 'Poppins', color: Colors.grey[700], fontSize: 24),
                     ),
                   ],
                 ),
