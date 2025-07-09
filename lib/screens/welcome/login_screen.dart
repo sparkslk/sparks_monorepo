@@ -57,7 +57,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     letterSpacing: 1.0,
                     fontWeight: FontWeight.w700,
                     fontSize: 26,
-                    color: Colors.purple[700],
+                    color: Color.fromRGBO(129, 89, 168, 1),
                   ),
                 ),
                 SizedBox(height: 8),

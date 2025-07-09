@@ -12,17 +12,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
   String lastName = '';
   String email = '';
   String password = '';
-  String selectedRole = 'NORMAL_USER'; // Default role
+  String selectedRole = 'NORMAL_USER';
   bool agree = false;
   bool isLoading = false;
   String? errorMsg;
-
-  // Available roles based on your backend
-  final List<Map<String, String>> roles = [
-    {'value': 'NORMAL_USER', 'label': 'Normal User'},
-    {'value': 'PARENT_GUARDIAN', 'label': 'Parent/Guardian'},
-    {'value': 'THERAPIST', 'label': 'Therapist'},
-  ];
 
   void _signup() async {
     if (!_formKey.currentState!.validate() || !agree) return;
@@ -74,23 +67,32 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 Text(
                   'Join Our Platform!',
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 24,
-                    color: const Color(0xff8159a8),
+                    fontFamily: 'Inter',
+                    letterSpacing: 1.0,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 26,
+                    color: Color.fromRGBO(129, 89, 168, 1),
                   ),
                 ),
                 SizedBox(height: 8),
-                Text(
-                  'Start your ADHD management journey today!',
-                  style: TextStyle(color: Colors.grey[700]),
+                Center(
+                  child: Text(
+                    'Start your ADHD management journey today!',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      color: Colors.black87,
+                      fontSize: 16,
+                    ),
+                  ),
                 ),
                 SizedBox(height: 22),
                 Container(
                   padding: EdgeInsets.all(18),
                   decoration: BoxDecoration(
-                    color: Color(0xFFF6F3FB),
+                    color: Color.fromRGBO(245, 243, 251, 1),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.purple[100]!),
+                    border: Border.all(color: Color.fromRGBO(185, 156, 213, 1)),
                   ),
                   child: Form(
                     key: _formKey,
@@ -103,6 +105,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 decoration: InputDecoration(
                                   labelText: 'First Name *',
                                 ),
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 18,
+                                  letterSpacing: 1.0,
+                                ),
                                 validator: (val) =>
                                     val!.isEmpty ? 'Required' : null,
                                 onSaved: (val) => firstName = val!,
@@ -114,6 +121,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 decoration: InputDecoration(
                                   labelText: 'Last Name *',
                                 ),
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 18,
+                                  letterSpacing: 1.0,
+                                ),
                                 validator: (val) =>
                                     val!.isEmpty ? 'Required' : null,
                                 onSaved: (val) => lastName = val!,
@@ -124,6 +136,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         SizedBox(height: 12),
                         TextFormField(
                           decoration: InputDecoration(labelText: 'Email *'),
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 18,
+                            letterSpacing: 1.0,
+                          ),
                           keyboardType: TextInputType.emailAddress,
                           validator: (val) =>
                               val!.isEmpty ? 'Enter your email' : null,
@@ -141,32 +158,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           onSaved: (val) => password = val!,
                         ),
                         SizedBox(height: 12),
-                        DropdownButtonFormField<String>(
-                          decoration: InputDecoration(
-                            labelText: 'Role *',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                          value: selectedRole,
-                          items: roles.map((role) {
-                            return DropdownMenuItem<String>(
-                              value: role['value'],
-                              child: Text(role['label']!),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              selectedRole = value!;
-                            });
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please select a role';
-                            }
-                            return null;
-                          },
-                        ),
+
                         SizedBox(height: 10),
                         Row(
                           children: [
@@ -178,6 +170,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               child: RichText(
                                 text: TextSpan(
                                   style: TextStyle(
+                                    fontFamily: 'Poppins',
                                     color: Colors.black87,
                                     fontSize: 13,
                                   ),
@@ -185,12 +178,20 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                     TextSpan(text: 'I agree to the '),
                                     TextSpan(
                                       text: 'Terms of Service',
-                                      style: TextStyle(color: const Color(0xff8159a8)),
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xff8159a8),
+                                      ),
                                     ),
                                     TextSpan(text: ' and '),
                                     TextSpan(
                                       text: 'Privacy Policy',
-                                      style: TextStyle(color: const Color(0xff8159a8)),
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xff8159a8),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -203,7 +204,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             alignment: Alignment.centerLeft,
                             child: Text(
                               'You must agree before signing up.',
-                              style: TextStyle(color: Colors.red, fontSize: 12),
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                color: Colors.red,
+                                fontSize: 12,
+                              ),
                             ),
                           ),
                         if (errorMsg != null)
@@ -225,7 +230,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               ? CircularProgressIndicator(color: Colors.white)
                               : Text(
                                   'Sign Up',
-                                  style: TextStyle(color: Colors.white),
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                  ),
                                 ),
                         ),
                         SizedBox(height: 12),
@@ -245,7 +254,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         OutlinedButton.icon(
                           onPressed: () {}, // Google sign in logic
                           icon: Icon(Icons.g_mobiledata, color: Colors.black),
-                          label: Text('Continue with Google'),
+                          label: Text(
+                            'Continue with Google',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 14,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
                           style: OutlinedButton.styleFrom(
                             minimumSize: Size(double.infinity, 44),
                           ),
@@ -254,7 +270,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text("Already have an account? "),
+                            Text(
+                              "Already have an account? ",
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 14,
+                                
+                              ),
+                            ),
                             GestureDetector(
                               onTap: () => Navigator.pushReplacementNamed(
                                 context,
@@ -262,7 +285,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
                               ),
                               child: Text(
                                 'Log In',
-                                style: TextStyle(color: const Color(0xff8159a8)),
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 1.0,
+                                  color: const Color(0xff8159a8),
+                                ),
                               ),
                             ),
                           ],
