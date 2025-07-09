@@ -10,8 +10,11 @@ class ProfileSetupStep1 extends StatelessWidget {
     final _addressController = TextEditingController();
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(backgroundColor: Colors.white),
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+      appBar: AppBar(
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+        elevation: 0,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -29,12 +32,12 @@ class ProfileSetupStep1 extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                       color: Color(0xff8159a8),
                     ),
-                    textAlign: TextAlign.left,
+                    textAlign: TextAlign.center,
                   ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  "Help us personalize your experience.\nWe'll guide you through this step by step - no rush!",
+                  "Help us personalize your experience.\nWe'll guide you through this step by step -\nno rush!",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontFamily: 'Poppins',
@@ -55,114 +58,258 @@ class ProfileSetupStep1 extends StatelessWidget {
                     _buildStepCircle(false),
                   ],
                 ),
+                const SizedBox(height: 12),
+                // Step indicator text
+                const Center(
+                  child: Text(
+                    'Step 1 of 3',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      color: Color(0xff8159a8),
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 28),
-                const Text(
-                  'Basic Information',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xff8159a8),
-                    fontSize: 18,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Just a few essential details to get started.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.black,
-                    fontFamily: 'Poppins',
-                    letterSpacing: 1.0,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                TextField(
-                  controller: _phoneController,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                    letterSpacing: 1.0,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: 'Phone',
-                    hintText: '+94 (71) 123-4567',
-                    border: OutlineInputBorder(),
-                    labelStyle: TextStyle(fontFamily: 'Poppins', fontSize: 14, letterSpacing: 1.0,),
-                    hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 14, letterSpacing: 1.0,),
-                  ),
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _dobController,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                    letterSpacing: 1.0,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: 'Date of Birth',
-                    hintText: 'dd/mm/yyyy',
-                    border: OutlineInputBorder(),
-                    suffixIcon: Icon(Icons.calendar_today),
-                    labelStyle: TextStyle(fontFamily: 'Poppins', fontSize: 14, letterSpacing: 1.0,),
-                    hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 14, letterSpacing: 1.0,),
-                  ),
-                  keyboardType: TextInputType.datetime,
-                ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                    letterSpacing: 1.0,
-                    color: Colors.black,
-                  ),
-                  decoration: const InputDecoration(
-                    labelText: 'Gender',
-                    border: OutlineInputBorder(),
-                    labelStyle: TextStyle(fontFamily: 'Poppins', fontSize: 14, letterSpacing: 1.0,),
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                      child: Text(
-                        'Male',
-                        style: TextStyle(fontFamily: 'Poppins', fontSize: 16, letterSpacing: 1.0,),
+                // Card container for form
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Color.fromRGBO(245, 243, 251, 1),
+
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
                       ),
-                      value: 'male',
-                    ),
-                    DropdownMenuItem(
-                      child: Text(
-                        'Female',
-                        style: TextStyle(fontFamily: 'Poppins', fontSize: 16, letterSpacing: 1.0,),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Basic Information',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff8159a8),
+                          fontSize: 18,
+                        ),
                       ),
-                      value: 'female',
-                    ),
-                  ],
-                  onChanged: (value) {},
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _addressController,
-                  style: const TextStyle(
-                    fontFamily: 'Poppins',
-                    fontSize: 16,
-                    letterSpacing: 1.0,
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Just a few essential details to get started.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.black,
+                          fontFamily: 'Poppins',
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      TextField(
+                        controller: _phoneController,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          letterSpacing: 1.0,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'Phone',
+                          hintText: '+94 (555) 123-4567',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xff8159a8)),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          labelStyle: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
+                          hintStyle: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        keyboardType: TextInputType.phone,
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _dobController,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          letterSpacing: 1.0,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'Date of Birth',
+                          hintText: 'dd/mm/yyyy',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xff8159a8)),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          suffixIcon: const Icon(Icons.calendar_today),
+                          labelStyle: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
+                          hintStyle: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        keyboardType: TextInputType.datetime,
+                      ),
+                      const SizedBox(height: 16),
+                      DropdownButtonFormField<String>(
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          letterSpacing: 1.0,
+                          color: Colors.black,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'Gender',
+                          hintText: 'Select gender',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xff8159a8)),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          labelStyle: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        hint: const Text(
+                          'Select gender',
+                          style: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            child: Text(
+                              'Male',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                            value: 'male',
+                          ),
+                          DropdownMenuItem(
+                            child: Text(
+                              'Female',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                            value: 'female',
+                          ),
+                        ],
+                        onChanged: (value) {},
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _addressController,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          letterSpacing: 1.0,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'Address',
+                          hintText: 'Enter your full address',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xff8159a8)),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          labelStyle: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
+                          hintStyle: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        maxLines: 3,
+                        minLines: 3,
+                      ),
+                    ],
                   ),
-                  decoration: const InputDecoration(
-                    labelText: 'Address',
-                    hintText: 'Enter your full address',
-                    border: OutlineInputBorder(),
-                    labelStyle: TextStyle(fontFamily: 'Poppins', fontSize: 14, letterSpacing: 1.0,),
-                    hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 14, letterSpacing: 1.0,),
-                  ),
-                  maxLines: 2,
                 ),
                 const SizedBox(height: 32),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xff8159a8)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(32),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 14,
+                        ),
+                      ),
                       onPressed: () {
                         Navigator.pop(context);
                       },
@@ -172,6 +319,7 @@ class ProfileSetupStep1 extends StatelessWidget {
                           fontFamily: 'Poppins',
                           fontSize: 16,
                           letterSpacing: 1.0,
+                          color: Color(0xff8159a8),
                         ),
                       ),
                     ),
