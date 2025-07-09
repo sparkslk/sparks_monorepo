@@ -11,6 +11,11 @@ class ProfileSetupStep2 extends StatelessWidget {
     final _secondaryPhoneController = TextEditingController();
 
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+      appBar: AppBar(
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+        elevation: 0,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -19,18 +24,27 @@ class ProfileSetupStep2 extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 16),
-                const Text(
-                  "Let's Set Up Your Profile",
-                  style: TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xff8159a8),
+                Center(
+                  child: const Text(
+                    "Let's Set Up Your Profile",
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff8159a8),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   "Help us personalize your experience.\nWe'll guide you through this step by step - no rush!",
-                  style: TextStyle(fontSize: 15, color: Colors.black54),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    color: Colors.black,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 // Stepper indicator
@@ -44,21 +58,33 @@ class ProfileSetupStep2 extends StatelessWidget {
                     _buildStepCircle(false),
                   ],
                 ),
-                const SizedBox(height: 28),
-                const Text(
-                  'Emergency Contact Details',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xff8159a8),
-                    fontSize: 16,
+                const SizedBox(height: 12),
+                const Center(
+                  child: Text(
+                    'Step 2 of 3',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      color: Color(0xff8159a8),
+                      letterSpacing: 1.0,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 28),
                 Container(
-                  padding: const EdgeInsets.all(16),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF7F3FF),
-                    borderRadius: BorderRadius.circular(12),
+                    color: Color.fromRGBO(245, 243, 251, 1),
+
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -66,44 +92,101 @@ class ProfileSetupStep2 extends StatelessWidget {
                       const Text(
                         'Primary Emergency Contact',
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.red,
-                          fontSize: 15,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff8159a8),
+                          fontSize: 18,
                         ),
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
                       TextField(
                         controller: _primaryNameController,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          letterSpacing: 1.0,
+                        ),
                         decoration: const InputDecoration(
                           labelText: 'Contact Name',
                           border: OutlineInputBorder(),
+                          labelStyle: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          letterSpacing: 1.0,
+                          color: Colors.black,
+                        ),
                         decoration: const InputDecoration(
                           labelText: 'Relationship',
                           border: OutlineInputBorder(),
+                          labelStyle: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
                         ),
                         items: const [
                           DropdownMenuItem(
-                            child: Text('Parent'),
+                            child: Text(
+                              'Parent',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
                             value: 'parent',
                           ),
                           DropdownMenuItem(
-                            child: Text('Sibling'),
+                            child: Text(
+                              'Sibling',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
                             value: 'sibling',
                           ),
                           DropdownMenuItem(
-                            child: Text('Spouse'),
+                            child: Text(
+                              'Spouse',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
                             value: 'spouse',
                           ),
                           DropdownMenuItem(
-                            child: Text('Friend'),
+                            child: Text(
+                              'Friend',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
                             value: 'friend',
                           ),
                           DropdownMenuItem(
-                            child: Text('Other'),
+                            child: Text(
+                              'Other',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
                             value: 'other',
                           ),
                         ],
@@ -112,10 +195,25 @@ class ProfileSetupStep2 extends StatelessWidget {
                       const SizedBox(height: 12),
                       TextField(
                         controller: _primaryPhoneController,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          letterSpacing: 1.0,
+                        ),
                         decoration: const InputDecoration(
                           labelText: 'Emergency Phone Number',
                           hintText: '+1 (555) 123-4567',
                           border: OutlineInputBorder(),
+                          labelStyle: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
+                          hintStyle: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
                         ),
                         keyboardType: TextInputType.phone,
                       ),
@@ -135,44 +233,101 @@ class ProfileSetupStep2 extends StatelessWidget {
                       const Text(
                         'Secondary Emergency Contact',
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w600,
                           color: Color(0xff8159a8),
-                          fontSize: 15,
+                          fontSize: 18,
                         ),
                       ),
                       const SizedBox(height: 10),
                       TextField(
                         controller: _secondaryNameController,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          letterSpacing: 1.0,
+                        ),
                         decoration: const InputDecoration(
                           labelText: 'Contact Name (Optional)',
                           border: OutlineInputBorder(),
+                          labelStyle: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          letterSpacing: 1.0,
+                          color: Colors.black,
+                        ),
                         decoration: const InputDecoration(
                           labelText: 'Relationship (Optional)',
                           border: OutlineInputBorder(),
+                          labelStyle: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
                         ),
                         items: const [
                           DropdownMenuItem(
-                            child: Text('Parent'),
+                            child: Text(
+                              'Parent',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
                             value: 'parent',
                           ),
                           DropdownMenuItem(
-                            child: Text('Sibling'),
+                            child: Text(
+                              'Sibling',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
                             value: 'sibling',
                           ),
                           DropdownMenuItem(
-                            child: Text('Spouse'),
+                            child: Text(
+                              'Spouse',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
                             value: 'spouse',
                           ),
                           DropdownMenuItem(
-                            child: Text('Friend'),
+                            child: Text(
+                              'Friend',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
                             value: 'friend',
                           ),
                           DropdownMenuItem(
-                            child: Text('Other'),
+                            child: Text(
+                              'Other',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
                             value: 'other',
                           ),
                         ],
@@ -181,10 +336,25 @@ class ProfileSetupStep2 extends StatelessWidget {
                       const SizedBox(height: 12),
                       TextField(
                         controller: _secondaryPhoneController,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          letterSpacing: 1.0,
+                        ),
                         decoration: const InputDecoration(
                           labelText: 'Emergency Phone Number (Optional)',
                           hintText: '+1 (555) 123-4567',
                           border: OutlineInputBorder(),
+                          labelStyle: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
+                          hintStyle: TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
                         ),
                         keyboardType: TextInputType.phone,
                       ),
@@ -199,7 +369,14 @@ class ProfileSetupStep2 extends StatelessWidget {
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      child: const Text('Previous'),
+                      child: const Text(
+                        'Previous',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -213,7 +390,14 @@ class ProfileSetupStep2 extends StatelessWidget {
                       onPressed: () {
                         Navigator.pushReplacementNamed(context, '/dashboard');
                       },
-                      child: const Text('Next'),
+                      child: const Text(
+                        'Next',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
                     ),
                   ],
                 ),
