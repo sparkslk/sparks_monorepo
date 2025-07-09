@@ -5,7 +5,7 @@ class MobileNavBar extends StatelessWidget {
   final ValueChanged<int>? onTap;
 
   const MobileNavBar({Key? key, required this.currentIndex, this.onTap})
-      : super(key: key);
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -28,18 +28,26 @@ class MobileNavBar extends StatelessWidget {
                     blurRadius: 60,
                     color: Colors.black.withOpacity(.20),
                     offset: Offset(0, 15),
-                  )
+                  ),
                 ],
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 8,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildNavItem(Icons.home, 'Home', 0, context),
-                    _buildNavItem(Icons.calendar_today, 'Schedule', 1, context),
-                    _buildNavItem(Icons.lightbulb_outline, 'Tips', 2, context),
-                    _buildNavItem(Icons.people_outline, 'Therapists', 3, context),
+                    _buildNavItem(Icons.calendar_today, 'Tasks', 1, context),
+                    _buildNavItem(
+                      Icons.lightbulb_outline,
+                      'Sparks',
+                      2,
+                      context,
+                    ),
+                    _buildNavItem(Icons.people_outline, 'Sessions', 3, context),
                   ],
                 ),
               ),
@@ -50,22 +58,36 @@ class MobileNavBar extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, int index, BuildContext context) {
+  Widget _buildNavItem(
+    IconData icon,
+    String label,
+    int index,
+    BuildContext context,
+  ) {
     final bool isSelected = currentIndex == index;
 
     return GestureDetector(
       onTap: () {
+        // Call the onTap callback if provided
         if (onTap != null) {
           onTap!(index);
-        } else {
-          // Default navigation logic
-          if (index == 0) {
+          return;
+        }
+
+        // Default navigation logic
+        switch (index) {
+          case 0:
             Navigator.pushReplacementNamed(context, '/dashboard');
-          } else if (index == 1) {
-            Navigator.pushReplacementNamed(context, '/book_session');
-          } else if (index == 3) {
+            break;
+          case 1:
+            Navigator.pushReplacementNamed(context, '/appointments');
+            break;
+          case 2:
             Navigator.pushReplacementNamed(context, '/choose_therapist');
-          }
+            break;
+          case 3:
+            Navigator.pushReplacementNamed(context, '/appointments');
+            break;
         }
       },
       child: AnimatedContainer(
@@ -76,7 +98,9 @@ class MobileNavBar extends StatelessWidget {
           vertical: 14,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xff8159a8).withOpacity(0.1) : Colors.transparent,
+          color: isSelected
+              ? const Color(0xff8159a8).withOpacity(0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(50),
         ),
         child: Row(
@@ -84,7 +108,9 @@ class MobileNavBar extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: isSelected ? const Color(0xff8159a8) : Colors.grey.shade600,
+              color: isSelected
+                  ? const Color(0xff8159a8)
+                  : Colors.grey.shade600,
               size: 22,
             ),
             if (isSelected) ...[
@@ -95,9 +121,11 @@ class MobileNavBar extends StatelessWidget {
                 child: Text(
                   label,
                   style: TextStyle(
+                    fontFamily: 'Poppins',
                     color: const Color(0xff8159a8),
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w700,
                     fontSize: 14,
+                    letterSpacing: 1.0,
                   ),
                 ),
               ),
