@@ -11,9 +11,7 @@ class ProfileSetupStep1 extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-      ),
+      appBar: AppBar(backgroundColor: Colors.white),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -26,8 +24,9 @@ class ProfileSetupStep1 extends StatelessWidget {
                   child: const Text(
                     "Let's Set Up Your Profile",
                     style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Inter',
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
                       color: Color(0xff8159a8),
                     ),
                     textAlign: TextAlign.left,
@@ -37,7 +36,12 @@ class ProfileSetupStep1 extends StatelessWidget {
                 const Text(
                   "Help us personalize your experience.\nWe'll guide you through this step by step - no rush!",
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.black),
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    color: Colors.black,
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 // Stepper indicator
@@ -55,57 +59,102 @@ class ProfileSetupStep1 extends StatelessWidget {
                 const Text(
                   'Basic Information',
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Inter',
+                    fontWeight: FontWeight.w600,
                     color: Color(0xff8159a8),
-                    fontSize: 16,
+                    fontSize: 18,
                   ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   'Just a few essential details to get started.',
-                  style: TextStyle(fontSize: 13, color: Colors.black54),
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.black,
+                    fontFamily: 'Poppins',
+                    letterSpacing: 1.0,
+                  ),
                 ),
                 const SizedBox(height: 18),
                 TextField(
                   controller: _phoneController,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                    letterSpacing: 1.0,
+                  ),
                   decoration: const InputDecoration(
                     labelText: 'Phone',
-                    hintText: '+94 (555) 123-4567',
+                    hintText: '+94 (71) 123-4567',
                     border: OutlineInputBorder(),
+                    labelStyle: TextStyle(fontFamily: 'Poppins', fontSize: 14, letterSpacing: 1.0,),
+                    hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 14, letterSpacing: 1.0,),
                   ),
                   keyboardType: TextInputType.phone,
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _dobController,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                    letterSpacing: 1.0,
+                  ),
                   decoration: const InputDecoration(
                     labelText: 'Date of Birth',
                     hintText: 'dd/mm/yyyy',
                     border: OutlineInputBorder(),
                     suffixIcon: Icon(Icons.calendar_today),
+                    labelStyle: TextStyle(fontFamily: 'Poppins', fontSize: 14, letterSpacing: 1.0,),
+                    hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 14, letterSpacing: 1.0,),
                   ),
                   keyboardType: TextInputType.datetime,
                 ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                    letterSpacing: 1.0,
+                    color: Colors.black,
+                  ),
                   decoration: const InputDecoration(
                     labelText: 'Gender',
                     border: OutlineInputBorder(),
+                    labelStyle: TextStyle(fontFamily: 'Poppins', fontSize: 14, letterSpacing: 1.0,),
                   ),
                   items: const [
-                    DropdownMenuItem(child: Text('Male'), value: 'male'),
-                    DropdownMenuItem(child: Text('Female'), value: 'female'),
-                    DropdownMenuItem(child: Text('Other'), value: 'other'),
+                    DropdownMenuItem(
+                      child: Text(
+                        'Male',
+                        style: TextStyle(fontFamily: 'Poppins', fontSize: 16, letterSpacing: 1.0,),
+                      ),
+                      value: 'male',
+                    ),
+                    DropdownMenuItem(
+                      child: Text(
+                        'Female',
+                        style: TextStyle(fontFamily: 'Poppins', fontSize: 16, letterSpacing: 1.0,),
+                      ),
+                      value: 'female',
+                    ),
                   ],
                   onChanged: (value) {},
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: _addressController,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 16,
+                    letterSpacing: 1.0,
+                  ),
                   decoration: const InputDecoration(
                     labelText: 'Address',
                     hintText: 'Enter your full address',
                     border: OutlineInputBorder(),
+                    labelStyle: TextStyle(fontFamily: 'Poppins', fontSize: 14, letterSpacing: 1.0,),
+                    hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 14, letterSpacing: 1.0,),
                   ),
                   maxLines: 2,
                 ),
@@ -117,7 +166,14 @@ class ProfileSetupStep1 extends StatelessWidget {
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      child: const Text('Go Back'),
+                      child: const Text(
+                        'Go Back',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
                     ),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
@@ -134,7 +190,14 @@ class ProfileSetupStep1 extends StatelessWidget {
                       onPressed: () {
                         Navigator.pushReplacementNamed(context, '/setup_two');
                       },
-                      child: const Text('Next'),
+                      child: const Text(
+                        'Next',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
                     ),
                   ],
                 ),
