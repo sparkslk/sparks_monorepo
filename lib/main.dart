@@ -9,8 +9,10 @@ import 'screens/setup/setup_two.dart';
 import 'screens/user/dashboard.dart';
 import 'screens/therapy/choose_therapist_screen.dart';
 import 'screens/therapy/therapist_profile_screen.dart';
-import 'screens/appointment/book_session_screen.dart';
 import 'screens/welcome/choose.dart';
+import 'screens/therapy/confirm_therapist.dart';
+import 'screens/therapy/book_session_one.dart';
+import 'screens/appointment/appointments_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,8 +41,10 @@ class SparksApp extends StatelessWidget {
         '/dashboard': (context) => DashboardScreen(),
         '/choose_therapist': (context) => ChooseTherapistScreen(),
         '/therapist_profile': (context) => TherapistProfileScreen(),
-        '/book_session': (context) => BookSessionScreen(),
         '/choose': (context) => ChooseScreen(),
+        '/confirm_therapist': (context) => ConfirmTherapistPage(),
+        '/book_session_one': (context) => BookSessionOnePage(),
+        '/appointments': (context) => AppointmentsScreen(),
       },
     );
   }
