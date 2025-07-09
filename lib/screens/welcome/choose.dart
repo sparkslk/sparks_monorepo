@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ChooseScreen extends StatelessWidget {
   const ChooseScreen({Key? key}) : super(key: key);
+
+  Future<void> _launchURL() async {
+    final Uri url = Uri.parse('https://sparks.help/');
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      throw Exception('Could not launch $url');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-      ),
+      appBar: AppBar(backgroundColor: Colors.white),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -22,8 +28,9 @@ class ChooseScreen extends StatelessWidget {
                 child: const Text(
                   'Welcome to SPARKS!',
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+                    fontFamily: 'Inter',
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
                     color: Color(0xff8159a8),
                   ),
                 ),
@@ -34,6 +41,8 @@ class ChooseScreen extends StatelessWidget {
                   'Great job completing your registration!\nLet\'s personalize your ADHD management\nexperience.',
                   textAlign: TextAlign.center,
                   style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontWeight: FontWeight.w400,
                     fontSize: 16,
                     color: Colors.black,
                     height: 1.5,
@@ -54,31 +63,22 @@ class ChooseScreen extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Container(
-                          width: 32,
-                          height: 32,
-                          decoration: const BoxDecoration(
-                            color: Color(0xff8159a8),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Center(
-                            child: const Icon(
-                              Icons.timeline,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                          ),
-                        ),
                         const SizedBox(width: 12),
-                        Center(
-                          child: const Text(
-                            'Your Journey Continues',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xff8159a8),
+                        Column(
+                          children: [
+                            Center(
+                              child: const Text(
+                                'Your Journey Continues',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xff8159a8),
+                                ),
+                              ),
                             ),
-                          ),
+                          ],
                         ),
                       ],
                     ),
@@ -122,7 +122,8 @@ class ChooseScreen extends StatelessWidget {
                             const Text(
                               'Complete Your Profile',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontFamily: 'Inter',
+                                fontSize: 18,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.black,
                               ),
@@ -132,7 +133,8 @@ class ChooseScreen extends StatelessWidget {
                               'Add a few details to get the most\nout of your SPARKS experience',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 14,
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
                                 color: Colors.black,
                                 height: 1.4,
                               ),
@@ -142,10 +144,18 @@ class ChooseScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 16),
+
                     // Onboarding Card
                     GestureDetector(
-                      onTap: () {
-                        Navigator.pushNamed(context, '/dashboard');
+                      onTap: () async {
+                        // Show a brief feedback that the tap was registered
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Opening SPARKS help page...'),
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                        await _launchURL();
                       },
                       child: Container(
                         width: double.infinity,
@@ -181,7 +191,8 @@ class ChooseScreen extends StatelessWidget {
                             const Text(
                               'Onboarding',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontFamily: 'Inter',
+                                fontSize: 18,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.black,
                               ),
@@ -191,7 +202,8 @@ class ChooseScreen extends StatelessWidget {
                               'Take a quick assessment so we\ncan customize your ADHD journey',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                fontSize: 14,
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
                                 color: Colors.black,
                                 height: 1.4,
                               ),
@@ -224,6 +236,7 @@ class ChooseScreen extends StatelessWidget {
                     child: const Text(
                       'Go to Dashboard',
                       style: TextStyle(
+                        fontFamily: 'Poppins',
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                       ),
