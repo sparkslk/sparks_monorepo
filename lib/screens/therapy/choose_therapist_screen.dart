@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/navbar.dart';
+import '../../widgets/therapy_appbar.dart';
 
 class ChooseTherapistScreen extends StatelessWidget {
   const ChooseTherapistScreen({Key? key}) : super(key: key);
@@ -48,112 +49,106 @@ class ChooseTherapistScreen extends StatelessWidget {
           if (index == 3) return; // Already on this page
           if (index == 0) {
             Navigator.pushReplacementNamed(context, '/dashboard');
+          } else if (index == 1) {
+            Navigator.pushReplacementNamed(context, '/appointments');
+          } else if (index == 2) {
+            Navigator.pushReplacementNamed(context, '/dashboard');
           }
           // Add navigation for other indices if needed
         },
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // AppBar
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const SizedBox(width: 32), // for symmetry
-                  const Expanded(
-                    child: Center(
-                      child: Text(
-                        "Therapists",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Icon(Icons.notifications_none, color: Colors.black54),
-                      const SizedBox(width: 10),
-                      const CircleAvatar(
-                        radius: 16,
-                        backgroundImage: NetworkImage(
-                          'https://randomuser.me/api/portraits/men/24.jpg',
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              const Text(
-                "Choose your therapist",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        prefixIcon: const Icon(Icons.search),
-                        hintText: 'Search',
-                        filled: true,
-                        fillColor: Colors.grey.shade100,
-                        contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: BorderSide.none,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    height: 48,
-                    width: 48,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.filter_list,
-                      color: Color(0xff8159a8),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
-              // Therapist Cards Grid
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: therapists.length,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  mainAxisSpacing: 16,
-                  crossAxisSpacing: 16,
-                  childAspectRatio: 0.82,
+        child: Column(
+          children: [
+            const SizedBox(height: 12),
+            const TherapyAppBar(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
                 ),
-                itemBuilder: (context, idx) {
-                  final t = therapists[idx];
-                  return _TherapistCard(
-                    name: t['name'] as String,
-                    specialty: t['specialty'] as String,
-                    rating: t['rating'] as double,
-                    reviews: t['reviews'] as String,
-                    avatarUrl: t['avatar'] as String,
-                    onViewDetails: () {
-                      Navigator.pushNamed(context, '/therapist_profile');
-                    },
-                  );
-                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 18),
+                    const Text(
+                      "Choose your therapist",
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            decoration: InputDecoration(
+                              prefixIcon: const Icon(Icons.search),
+                              hintText: 'Search',
+
+                              filled: true,
+                              fillColor: Colors.grey.shade200,
+                              contentPadding: const EdgeInsets.symmetric(
+                                vertical: 0,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          height: 48,
+                          width: 48,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.filter_list,
+                            color: Color(0xff8159a8),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    // Therapist Cards Grid
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: therapists.length,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 16,
+                            crossAxisSpacing: 16,
+                            childAspectRatio: 0.82,
+                          ),
+                      itemBuilder: (context, idx) {
+                        final t = therapists[idx];
+                        return _TherapistCard(
+                          name: t['name'] as String,
+                          specialty: t['specialty'] as String,
+                          rating: t['rating'] as double,
+                          reviews: t['reviews'] as String,
+                          avatarUrl: t['avatar'] as String,
+                          onViewDetails: () {
+                            Navigator.pushNamed(context, '/therapist_profile');
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -192,13 +187,21 @@ class _TherapistCard extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             name,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           Text(
             specialty,
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 12,
+              color: Colors.black87,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -211,13 +214,17 @@ class _TherapistCard extends StatelessWidget {
               Text(
                 rating.toString(),
                 style: const TextStyle(
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w500,
                   fontSize: 13,
                 ),
               ),
               Text(
                 ' ($reviews)',
-                style: const TextStyle(fontSize: 12, color: Colors.black54),
+                style: const TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 12,
+                  color: Colors.black54,
+                ),
               ),
             ],
           ),
@@ -234,7 +241,15 @@ class _TherapistCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 8),
               ),
               onPressed: onViewDetails,
-              child: const Text('View Details', style: TextStyle(fontSize: 14)),
+              child: const Text(
+                'View Details',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: 'Poppins',
+                  letterSpacing: 0.5,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
             ),
           ),
         ],
