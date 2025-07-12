@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/navbar.dart';
+import '../../widgets/therapy_appbar.dart';
 
 class TherapistProfileScreen extends StatelessWidget {
   const TherapistProfileScreen({Key? key}) : super(key: key);
@@ -14,11 +15,14 @@ class TherapistProfileScreen extends StatelessWidget {
       bottomNavigationBar: MobileNavBar(
         currentIndex: 3,
         onTap: (index) {
-          if (index == 3) return; // Already on this page
+          if (index == 3) return; // Already on therapists page
           if (index == 0) {
             Navigator.pushReplacementNamed(context, '/dashboard');
+          } else if (index == 1) {
+            Navigator.pushReplacementNamed(context, '/appointments');
+          } else if (index == 2) {
+            Navigator.pushReplacementNamed(context, '/dashboard');
           }
-          // Add navigation for other indices if needed
         },
       ),
       body: SafeArea(
@@ -27,25 +31,6 @@ class TherapistProfileScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // AppBar
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  SizedBox(width: 32), // for symmetry
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        "Therapist's profile",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Icon(Icons.notifications_none, color: Colors.black54),
-                ],
-              ),
               const SizedBox(height: 18),
               // Profile Card
               Container(
@@ -195,7 +180,12 @@ class TherapistProfileScreen extends StatelessWidget {
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  onPressed: () {},
+                  onPressed: () {
+                    Navigator.pushReplacementNamed(
+                      context,
+                      '/confirm_therapist',
+                    );
+                  },
                   child: const Text(
                     'Choose Therapist',
                     style: TextStyle(fontSize: 16),
