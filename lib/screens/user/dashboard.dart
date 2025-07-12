@@ -13,13 +13,57 @@ class DashboardScreen extends StatelessWidget {
     ];
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.emergency, color: Colors.black54, size: 28),
+          onPressed: () {},
+        ),
+        title: Center(
+          child: const Text(
+            'Sparks Dashboard',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w600,
+              fontSize: 18,
+              color: Colors.black,
+            ),
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.notifications_none,
+              color: Colors.black54,
+              size: 24,
+            ),
+            onPressed: () {},
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: const Color(0xff8159a8),
+              child: const Icon(Icons.person, color: Colors.white, size: 20),
+            ),
+          ),
+        ],
+      ),
       bottomNavigationBar: MobileNavBar(
         currentIndex: 0,
         onTap: (index) {
-          if (index == 3) {
+          if (index == 0) return; // Already on this page
+          if (index == 1) {
+            Navigator.pushReplacementNamed(context, '/appointments');
+          } else if (index == 2) {
+            // Stay on dashboard for sparks features
+            return;
+          } else if (index == 3) {
             Navigator.pushReplacementNamed(context, '/choose_therapist');
           }
-          // Add navigation for other indices if needed
         },
       ),
       body: SafeArea(
@@ -28,39 +72,25 @@ class DashboardScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // AppBar Row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Sparks Dashboard',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                  ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.notifications_none),
-                        onPressed: () {},
-                      ),
-                      const CircleAvatar(
-                        radius: 18,
-                        backgroundColor: Color(0xff8159a8),
-                        child: Icon(Icons.person, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 18),
               // Greeting
               const Text(
-                'Hello, Sandhavi Wanigasooriya!',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+                'Hello, Sandhavi!',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontWeight: FontWeight.w600,
+                  fontSize: 22,
+                  letterSpacing: 1.0,
+                ),
               ),
               const SizedBox(height: 4),
               const Text(
                 'Ready to spark your focus today?',
-                style: TextStyle(fontSize: 15, color: Colors.black54),
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 15,
+                  letterSpacing: 1.0,
+                  color: Colors.black87,
+                ),
               ),
               const SizedBox(height: 20),
               // Focus & Tasks Row
@@ -69,7 +99,7 @@ class DashboardScreen extends StatelessWidget {
                   Expanded(
                     child: _DashboardStatCard(
                       icon: Icons.timer,
-                      title: 'Focus Time\nThis Week',
+                      title: 'Focus Time This Week',
                       value: '10m',
                       subtitle: 'Achieved your goal by 1h!',
                       color: const Color(0xff8159a8),
@@ -79,20 +109,24 @@ class DashboardScreen extends StatelessWidget {
                   Expanded(
                     child: _DashboardStatCard(
                       icon: Icons.check_circle_outline,
-                      title: 'Tasks\nCompleted',
+                      title: 'Tasks Completed',
                       value: '2',
                       subtitle: 'Keep up the great work!',
                       color: const Color(0xff8159a8),
-                      showProgress: true,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 28),
               // Next Appointment
               const Text(
                 'Next Appointment',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  letterSpacing: 1.0,
+                ),
               ),
               const SizedBox(height: 10),
               Container(
@@ -115,13 +149,21 @@ class DashboardScreen extends StatelessWidget {
                         children: const [
                           Text(
                             'Dr. Kamal Perera',
-                            style: TextStyle(fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Poppins',
+                              fontSize: 15,
+                              letterSpacing: 0.5,
+                              color: Colors.black87,
+                            ),
                           ),
                           Text(
                             'General Practitioner',
                             style: TextStyle(
+                              fontFamily: 'Poppins',
                               fontSize: 13,
-                              color: Colors.black54,
+                              fontStyle: FontStyle.italic,
+                              color: Colors.black87,
                             ),
                           ),
                         ],
@@ -134,6 +176,8 @@ class DashboardScreen extends StatelessWidget {
                           'Confirmed',
                           style: TextStyle(
                             color: Colors.green,
+                            fontFamily: 'Poppins',
+                            letterSpacing: 1.0,
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
                           ),
@@ -141,25 +185,39 @@ class DashboardScreen extends StatelessWidget {
                         const SizedBox(height: 6),
                         Row(
                           children: const [
+                            Text(
+                              '03:30 PM',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontFamily: 'Poppins',
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                            SizedBox(width: 6),
                             Icon(
                               Icons.access_time,
                               size: 16,
                               color: Colors.black54,
                             ),
-                            SizedBox(width: 4),
-                            Text('03:30 PM', style: TextStyle(fontSize: 13)),
                           ],
                         ),
                         const SizedBox(height: 2),
                         Row(
                           children: const [
+                            Text(
+                              '31/07/2025',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontFamily: 'Poppins',
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                            SizedBox(width: 6),
                             Icon(
                               Icons.calendar_today,
                               size: 15,
                               color: Colors.black54,
                             ),
-                            SizedBox(width: 4),
-                            Text('31/07/2025', style: TextStyle(fontSize: 13)),
                           ],
                         ),
                       ],
@@ -167,14 +225,19 @@ class DashboardScreen extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 28),
               // Featured Articles
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
                   Text(
                     'Featured Articles',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                      letterSpacing: 1.0,
+                    ),
                   ),
                   Text(
                     'View all',
@@ -230,11 +293,16 @@ class DashboardScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               // Explore Sparks Features
               const Text(
                 'Explore Sparks Features',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  letterSpacing: 1.0,
+                ),
               ),
               const SizedBox(height: 12),
               _FeatureCard(
@@ -286,6 +354,7 @@ class _DashboardStatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      height: 140, // Fixed height for consistent sizing
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color.withOpacity(0.07),
@@ -294,29 +363,48 @@ class _DashboardStatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 26),
-          const SizedBox(height: 10),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 13,
-              color: color,
-              fontWeight: FontWeight.w600,
+          Row(
+            children: [
+              Icon(icon, color: color, size: 24),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: color,
+                    fontWeight: FontWeight.w600,
+                    fontFamily: 'Poppins',
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Center(
+            child: Text(
+              value,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: color,
+                fontFamily: 'Poppins',
+              ),
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-              color: color,
+          Expanded(
+            child: Center(
+              child: Text(
+                subtitle,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.black54,
+                  fontFamily: 'Poppins',
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            subtitle,
-            style: const TextStyle(fontSize: 12, color: Colors.black54),
           ),
           if (showProgress)
             Padding(
