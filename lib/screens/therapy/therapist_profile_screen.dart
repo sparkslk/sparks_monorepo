@@ -27,10 +27,12 @@ class TherapistProfileScreen extends StatelessWidget {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
+
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const TherapyAppBar(),
               const SizedBox(height: 18),
               // Profile Card
               Container(
