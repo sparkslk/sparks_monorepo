@@ -12,7 +12,10 @@ import 'screens/therapy/therapist_profile_screen.dart';
 import 'screens/welcome/choose.dart';
 import 'screens/therapy/confirm_therapist.dart';
 import 'screens/therapy/book_session_one.dart';
-import 'screens/appointment/appointments_screen.dart';
+import 'screens/appointment/appoiintment.dart';
+import 'screens/appointment/reschedule.dart';
+import 'screens/appointment/join_session.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,7 +47,12 @@ class SparksApp extends StatelessWidget {
         '/choose': (context) => ChooseScreen(),
         '/confirm_therapist': (context) => ConfirmTherapistPage(),
         '/book_session_one': (context) => BookSessionOnePage(),
-        '/appointments': (context) => AppointmentsScreen(),
+        '/appointments': (context) => AppointmentPage(),
+        '/reschedule': (context) => RescheduleSessionPage(),
+        '/join_session': (context) {
+          final appointment = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+          return SessionPage(appointment: appointment);
+        },
       },
     );
   }
