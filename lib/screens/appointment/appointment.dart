@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../widgets/navbar.dart';
 import 'join_session.dart'; // Import the SessionPage
+import 'past_summary.dart'; // Import the SessionSummaryPage
 
 class AppointmentPage extends StatefulWidget {
   const AppointmentPage({Key? key}) : super(key: key);
@@ -330,190 +331,225 @@ class _AppointmentPageState extends State<AppointmentPage> {
   }
 
   Widget _buildAppointmentCard(Map<String, dynamic> appointment, bool isUpcoming) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                // Avatar
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    color: appointment['color'],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Center(
-                    child: Text(
-                      appointment['avatar'],
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                // Details
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        appointment['therapist'],
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        appointment['specialization'],
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey.shade600,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Status Badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: appointment['color'].withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    appointment['status'],
-                    style: TextStyle(
-                      color: appointment['color'],
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      fontFamily: 'Poppins',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            // Appointment Details Row
-            Row(
-              children: [
-                _buildDetailItem(Icons.calendar_today, appointment['date']),
-                const SizedBox(width: 20),
-                _buildDetailItem(Icons.access_time, appointment['time']),
-                const SizedBox(width: 20),
-                _buildDetailItem(
-                  appointment['type'] == 'Video Call' ? Icons.videocam : Icons.location_on,
-                  appointment['type'],
-                ),
-              ],
-            ),
-            // Rating for past appointments
-            if (!isUpcoming && appointment['rating'] != null) ...[
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Text(
-                    'Rating: ',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                      fontFamily: 'Poppins',
-                    ),
-                  ),
-                  Row(
-                    children: List.generate(5, (index) {
-                      return Icon(
-                        index < appointment['rating'] ? Icons.star : Icons.star_border,
-                        color: const Color(0xFFF59E0B),
-                        size: 16,
-                      );
-                    }),
-                  ),
-                ],
+    return GestureDetector(
+      onTap: () {
+        // Navigate to session summary for past appointments
+        if (!isUpcoming) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => SessionSummaryPage(
+                appointment: appointment,
               ),
-            ],
-            // Action Buttons for upcoming appointments
-            if (isUpcoming && appointment['status'] == 'confirmed') ...[
-              const SizedBox(height: 16),
+            ),
+          );
+        }
+      },
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
               Row(
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(
-                          context,
-                          '/reschedule',
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.grey.shade300),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
+                  // Avatar
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: appointment['color'],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
                       child: Text(
-                        'Reschedule',
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                          fontFamily: 'Poppins',
+                        appointment['avatar'],
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
+                  // Details
                   Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Navigate to SessionPage with appointment data
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => SessionPage(
-                              appointment: appointment,
-                            ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          appointment['therapist'],
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.black87,
+                            fontFamily: 'Poppins',
                           ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xff8159a8),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ),
-                      child: const Text(
-                        'Join Session',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontFamily: 'Poppins',
+                        const SizedBox(height: 2),
+                        Text(
+                          appointment['specialization'],
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey.shade600,
+                            fontFamily: 'Poppins',
+                          ),
                         ),
+                      ],
+                    ),
+                  ),
+                  // Status Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: appointment['color'].withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      appointment['status'],
+                      style: TextStyle(
+                        color: appointment['color'],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Poppins',
                       ),
                     ),
                   ),
+                  // Add tap indicator for past appointments
+                  if (!isUpcoming) ...[
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                      color: Colors.grey.shade400,
+                    ),
+                  ],
                 ],
               ),
+              const SizedBox(height: 16),
+              // Appointment Details Row
+              Row(
+                children: [
+                  _buildDetailItem(Icons.calendar_today, appointment['date']),
+                  const SizedBox(width: 20),
+                  _buildDetailItem(Icons.access_time, appointment['time']),
+                  const SizedBox(width: 20),
+                  _buildDetailItem(
+                    appointment['type'] == 'Video Call' ? Icons.videocam : Icons.location_on,
+                    appointment['type'],
+                  ),
+                ],
+              ),
+              // Rating for past appointments
+              if (!isUpcoming && appointment['rating'] != null) ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Text(
+                      'Rating: ',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                    Row(
+                      children: List.generate(5, (index) {
+                        return Icon(
+                          index < appointment['rating'] ? Icons.star : Icons.star_border,
+                          color: const Color(0xFFF59E0B),
+                          size: 16,
+                        );
+                      }),
+                    ),
+                    const Spacer(),
+                    Text(
+                      'Tap for details',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade500,
+                        fontFamily: 'Poppins',
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              // Action Buttons for upcoming appointments
+              if (isUpcoming && appointment['status'] == 'confirmed') ...[
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.pushReplacementNamed(
+                            context,
+                            '/reschedule',
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.grey.shade300),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(
+                          'Reschedule',
+                          style: TextStyle(
+                            color: Colors.grey.shade700,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          // Navigate to SessionPage with appointment data
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => SessionPage(
+                                appointment: appointment,
+                              ),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xff8159a8),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          'Join Session',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

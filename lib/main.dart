@@ -12,9 +12,11 @@ import 'screens/therapy/therapist_profile_screen.dart';
 import 'screens/welcome/choose.dart';
 import 'screens/therapy/confirm_therapist.dart';
 import 'screens/therapy/book_session_one.dart';
-import 'screens/appointment/appoiintment.dart';
+import 'screens/appointment/appointment.dart';
 import 'screens/appointment/reschedule.dart';
 import 'screens/appointment/join_session.dart';
+import 'screens/appointment/past_summary.dart';
+
 
 
 void main() async {
@@ -48,10 +50,15 @@ class SparksApp extends StatelessWidget {
         '/confirm_therapist': (context) => ConfirmTherapistPage(),
         '/book_session_one': (context) => BookSessionOnePage(),
         '/appointments': (context) => AppointmentPage(),
+        '/past_summary': (context){
+          final appointment = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+          return SessionSummaryPage(appointment: appointment);
+        },
         '/reschedule': (context) => RescheduleSessionPage(),
         '/join_session': (context) {
           final appointment = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
           return SessionPage(appointment: appointment);
+
         },
       },
     );
