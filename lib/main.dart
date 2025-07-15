@@ -16,6 +16,7 @@ import 'screens/appointment/appointment.dart';
 import 'screens/appointment/reschedule.dart';
 import 'screens/appointment/join_session.dart';
 import 'screens/appointment/past_summary.dart';
+import 'screens/task/dashboard.dart';
 import 'widgets/not-found.dart';
 
 void main() async {
@@ -48,6 +49,7 @@ class SparksApp extends StatelessWidget {
         '/confirm_therapist': (context) => ConfirmTherapistPage(),
         '/book_session_one': (context) => BookSessionOnePage(),
         '/appointments': (context) => AppointmentPage(),
+        '/task_dashboard': (context) => TaskDashboardPage(),
         '/past_summary': (context) {
           final appointment =
               ModalRoute.of(context)!.settings.arguments

@@ -38,7 +38,7 @@ class _RescheduleSessionPageState extends State<RescheduleSessionPage> {
           } else if (index == 3) {
             Navigator.pushReplacementNamed(context, '/choose_therapist');
           } else if (index == 2) {
-            Navigator.pushReplacementNamed(context, '/dashboard');
+            Navigator.pushReplacementNamed(context, '/task_dashboard');
           }
         },
       ),

@@ -173,7 +173,7 @@ class _DashboardScreenState extends State<DashboardScreen>
           if (index == 1) {
             Navigator.pushReplacementNamed(context, '/appointments');
           } else if (index == 2) {
-            return;
+            Navigator.pushReplacementNamed(context, '/task_dashboard');
           } else if (index == 3) {
             Navigator.pushReplacementNamed(context, '/choose_therapist');
           }

@@ -68,7 +68,7 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
           } else if (index == 1) {
             Navigator.pushReplacementNamed(context, '/appointments');
           } else if (index == 2) {
-            Navigator.pushReplacementNamed(context, '/dashboard');
+            Navigator.pushReplacementNamed(context, '/task_dashboard');
           }
         },
       ),

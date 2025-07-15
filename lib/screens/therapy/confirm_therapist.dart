@@ -22,7 +22,7 @@ class _ConfirmTherapistPageState extends State<ConfirmTherapistPage> {
           } else if (index == 1) {
             Navigator.pushReplacementNamed(context, '/appointments');
           } else if (index == 2) {
-            Navigator.pushReplacementNamed(context, '/dashboard');
+            Navigator.pushReplacementNamed(context, '/task_dashboard');
           }
           // Add navigation for other indices if needed
         },
