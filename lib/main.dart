@@ -16,15 +16,13 @@ import 'screens/appointment/appointment.dart';
 import 'screens/appointment/reschedule.dart';
 import 'screens/appointment/join_session.dart';
 import 'screens/appointment/past_summary.dart';
-
-
+import 'widgets/not-found.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables
   await dotenv.load(fileName: ".env");
-
   runApp(SparksApp());
 }
 
@@ -50,16 +48,20 @@ class SparksApp extends StatelessWidget {
         '/confirm_therapist': (context) => ConfirmTherapistPage(),
         '/book_session_one': (context) => BookSessionOnePage(),
         '/appointments': (context) => AppointmentPage(),
-        '/past_summary': (context){
-          final appointment = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+        '/past_summary': (context) {
+          final appointment =
+              ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>;
           return SessionSummaryPage(appointment: appointment);
         },
         '/reschedule': (context) => RescheduleSessionPage(),
         '/join_session': (context) {
-          final appointment = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+          final appointment =
+              ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>;
           return SessionPage(appointment: appointment);
-
         },
+  
       },
     );
   }

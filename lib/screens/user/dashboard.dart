@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/navbar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -10,6 +11,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen>
     with TickerProviderStateMixin {
+  String? _userName;
   late AnimationController _fadeController;
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
@@ -38,6 +40,15 @@ class _DashboardScreenState extends State<DashboardScreen>
 
     _fadeController.forward();
     _slideController.forward();
+
+    _loadUserName();
+  }
+
+  Future<void> _loadUserName() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _userName = prefs.getString('name') ?? 'User';
+    });
   }
 
   @override
@@ -251,10 +262,10 @@ class _DashboardScreenState extends State<DashboardScreen>
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
-                      'Hello, Sandhavi!',
-                      style: TextStyle(
+                      'Hello, ${_userName ?? 'User'}!',
+                      style: const TextStyle(
                         fontFamily: 'Inter',
                         fontWeight: FontWeight.w700,
                         fontSize: 28,
@@ -262,8 +273,8 @@ class _DashboardScreenState extends State<DashboardScreen>
                         letterSpacing: -0.5,
                       ),
                     ),
-                    SizedBox(height: 4),
-                    Text(
+                    const SizedBox(height: 4),
+                    const Text(
                       'Ready to spark your focus today?',
                       style: TextStyle(
                         fontFamily: 'Inter',
