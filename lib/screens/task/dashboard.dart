@@ -34,7 +34,7 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
   Future<void> _loadUserName() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _userName = prefs.getString('name') ?? 'Bruce';
+      _userName = prefs.getString('name') ?? 'Sandhavi';
     });
   }
 
@@ -57,21 +57,13 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
           decoration: const BoxDecoration(
             color: Colors.white,
             border: Border(
-              bottom: BorderSide(
-                color: Color(0xFFE9ECEF),
-                width: 1,
-              ),
+              bottom: BorderSide(color: Color(0xFFE9ECEF), width: 1),
             ),
           ),
         ),
         leading: Padding(
           padding: const EdgeInsets.only(left: 20),
-          child: Container(
-            width: 44,
-            height: 44,
-            
-          
-          ),
+          child: Container(width: 44, height: 44),
         ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -105,10 +97,7 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
               decoration: BoxDecoration(
                 color: const Color(0xFFF8F9FA),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: const Color(0xFFE9ECEF),
-                  width: 1,
-                ),
+                border: Border.all(color: const Color(0xFFE9ECEF), width: 1),
               ),
               child: const Icon(
                 Icons.notifications_outlined,
@@ -146,7 +135,7 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF8159A8),
+                      color: const Color.fromARGB(246, 147, 104, 191),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Column(
@@ -197,17 +186,15 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                               height: 40,
                               color: Colors.white.withOpacity(0.3),
                             ),
-                            Expanded(
-                              child: _buildOverviewItem('3', 'Pending'),
-                            ),
+                            Expanded(child: _buildOverviewItem('3', 'Pending')),
                           ],
                         ),
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Quick Action Buttons
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -223,9 +210,9 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   Row(
                     children: [
                       Expanded(
@@ -265,9 +252,9 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 32),
-                  
+
                   // Yesterday's Uncompleted Tasks
                   const Text(
                     'Yesterday\'s Tasks',
@@ -278,24 +265,47 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                       color: Color(0xFFEF4444),
                     ),
                   ),
-                  
                   const SizedBox(height: 16),
-                  
-                  _buildTaskItem(
-                    'Website Redesign Review',
-                    'UI/UX Design',
-                    'Overdue',
-                    'overdue',
+                  // Make yesterday's tasks clickable
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/day_tasks',
+                        arguments: {
+                          'date': DateTime.now().subtract(
+                            const Duration(days: 1),
+                          ),
+                        },
+                      );
+                    },
+                    child: _buildTaskItem(
+                      'Website Redesign Review',
+                      'UI/UX Design',
+                      'Overdue',
+                      'overdue',
+                    ),
                   ),
-                  _buildTaskItem(
-                    'Client Meeting Preparation',
-                    'Project Management',
-                    'Overdue',
-                    'overdue',
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/day_tasks',
+                        arguments: {
+                          'date': DateTime.now().subtract(
+                            const Duration(days: 1),
+                          ),
+                        },
+                      );
+                    },
+                    child: _buildTaskItem(
+                      'Client Meeting Preparation',
+                      'Project Management',
+                      'Overdue',
+                      'overdue',
+                    ),
                   ),
-                  
                   const SizedBox(height: 32),
-                  
                   // Today's Tasks Section
                   const Text(
                     'Today\'s Tasks',
@@ -306,39 +316,82 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                       color: Color(0xFF1A1A1A),
                     ),
                   ),
-                  
                   const SizedBox(height: 16),
-                  
-                  // Task List
-                  _buildTaskItem(
-                    'Dashboard Analytics Implementation',
-                    'Product Design',
-                    'Due: 6:00 PM',
-                    'high',
+                  // Make today's tasks clickable
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/day_tasks',
+                        arguments: {'date': DateTime.now()},
+                      );
+                    },
+                    child: _buildTaskItem(
+                      'Dashboard Analytics Implementation',
+                      'Product Design',
+                      'Due: 6:00 PM',
+                      'high',
+                    ),
                   ),
-                  _buildTaskItem(
-                    'Mobile App Testing',
-                    'App Development',
-                    'Due: 4:00 PM',
-                    'medium',
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/day_tasks',
+                        arguments: {'date': DateTime.now()},
+                      );
+                    },
+                    child: _buildTaskItem(
+                      'Mobile App Testing',
+                      'App Development',
+                      'Due: 4:00 PM',
+                      'medium',
+                    ),
                   ),
-                  _buildTaskItem(
-                    'Brand Identity Research',
-                    'Branding',
-                    'Due: 8:00 PM',
-                    'low',
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/day_tasks',
+                        arguments: {'date': DateTime.now()},
+                      );
+                    },
+                    child: _buildTaskItem(
+                      'Brand Identity Research',
+                      'Branding',
+                      'Due: 8:00 PM',
+                      'low',
+                    ),
                   ),
-                  _buildTaskItem(
-                    'Team Standup Meeting',
-                    'Project Management',
-                    'Due: 10:00 AM',
-                    'medium',
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/day_tasks',
+                        arguments: {'date': DateTime.now()},
+                      );
+                    },
+                    child: _buildTaskItem(
+                      'Team Standup Meeting',
+                      'Project Management',
+                      'Due: 10:00 AM',
+                      'medium',
+                    ),
                   ),
-                  _buildTaskItem(
-                    'Code Review Session',
-                    'Development',
-                    'Due: 2:00 PM',
-                    'high',
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/day_tasks',
+                        arguments: {'date': DateTime.now()},
+                      );
+                    },
+                    child: _buildTaskItem(
+                      'Code Review Session',
+                      'Development',
+                      'Due: 2:00 PM',
+                      'high',
+                    ),
                   ),
                   const SizedBox(height: 24),
                 ],
@@ -376,7 +429,12 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
     );
   }
 
-  Widget _buildActionButton(String title, IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildActionButton(
+    String title,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -384,10 +442,7 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: color.withOpacity(0.2),
-            width: 1,
-          ),
+          border: Border.all(color: color.withOpacity(0.2), width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.04),
@@ -404,11 +459,7 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                 color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
-                icon,
-                color: color,
-                size: 24,
-              ),
+              child: Icon(icon, color: color, size: 24),
             ),
             const SizedBox(height: 8),
             Text(
@@ -427,11 +478,16 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
     );
   }
 
-  Widget _buildTaskItem(String title, String category, String dueTime, String priority) {
+  Widget _buildTaskItem(
+    String title,
+    String category,
+    String dueTime,
+    String priority,
+  ) {
     Color priorityColor;
     Color cardColor = Colors.white;
     Color textColor = const Color(0xFF1A1A1A);
-    
+
     switch (priority) {
       case 'overdue':
         priorityColor = const Color(0xFFEF4444);
@@ -458,9 +514,9 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
         color: cardColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: priority == 'overdue' 
-            ? const Color(0xFFEF4444).withOpacity(0.3)
-            : const Color(0xFFE9ECEF),
+          color: priority == 'overdue'
+              ? const Color(0xFFEF4444).withOpacity(0.3)
+              : const Color(0xFFE9ECEF),
           width: 1,
         ),
         boxShadow: [
@@ -477,18 +533,18 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: priority == 'overdue' 
-                ? const Color(0xFFEF4444).withOpacity(0.1)
-                : const Color(0xFF8159A8).withOpacity(0.1),
+              color: priority == 'overdue'
+                  ? const Color(0xFFEF4444).withOpacity(0.1)
+                  : const Color(0xFF8159A8).withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
-              priority == 'overdue' 
-                ? Icons.warning_outlined
-                : Icons.folder_outlined,
-              color: priority == 'overdue' 
-                ? const Color(0xFFEF4444)
-                : const Color(0xFF8159A8),
+              priority == 'overdue'
+                  ? Icons.warning_outlined
+                  : Icons.folder_outlined,
+              color: priority == 'overdue'
+                  ? const Color(0xFFEF4444)
+                  : const Color(0xFF8159A8),
               size: 20,
             ),
           ),
@@ -512,9 +568,9 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,
-                    color: priority == 'overdue' 
-                      ? const Color(0xFFEF4444).withOpacity(0.8)
-                      : const Color(0xFF6B7280),
+                    color: priority == 'overdue'
+                        ? const Color(0xFFEF4444).withOpacity(0.8)
+                        : const Color(0xFF6B7280),
                     fontWeight: FontWeight.w400,
                   ),
                 ),
@@ -524,9 +580,9 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 12,
-                    color: priority == 'overdue' 
-                      ? const Color(0xFFEF4444)
-                      : const Color(0xFF8159A8),
+                    color: priority == 'overdue'
+                        ? const Color(0xFFEF4444)
+                        : const Color(0xFF8159A8),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -547,15 +603,22 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
               GestureDetector(
                 onTap: () {
                   // Navigate to task details
-                  Navigator.pushNamed(context, '/task_details', arguments: {
-                    'title': title,
-                    'category': category,
-                    'dueTime': dueTime,
-                    'priority': priority,
-                  });
+                  Navigator.pushNamed(
+                    context,
+                    '/task_details',
+                    arguments: {
+                      'title': title,
+                      'category': category,
+                      'dueTime': dueTime,
+                      'priority': priority,
+                    },
+                  );
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFF8159A8).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
