@@ -17,6 +17,10 @@ import 'screens/appointment/reschedule.dart';
 import 'screens/appointment/join_session.dart';
 import 'screens/appointment/past_summary.dart';
 import 'screens/task/dashboard.dart';
+import 'screens/task/add_task.dart';
+import 'screens/task/pomodoro_timer.dart';
+import 'screens/task/completed_task.dart';
+import 'screens/task/day_tasks.dart';
 import 'widgets/not-found.dart';
 
 void main() async {
@@ -50,6 +54,10 @@ class SparksApp extends StatelessWidget {
         '/book_session_one': (context) => BookSessionOnePage(),
         '/appointments': (context) => AppointmentPage(),
         '/task_dashboard': (context) => TaskDashboardPage(),
+        '/add_task': (context) => NewTasksPage(),
+        '/pomodoro_timer': (context) => PomodoroTimerPage(),
+        '/completed_tasks': (context) => CompletedTasksPage(),
+        '/day_tasks': (context) => CompletedDayTasksPage(),
         '/past_summary': (context) {
           final appointment =
               ModalRoute.of(context)!.settings.arguments
