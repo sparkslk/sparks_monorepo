@@ -1,119 +1,118 @@
-<img src = ".\apps\frontend\assets\logowhite.png" class="logo" width="120" title="Sparks"/>
+<p align="center">
+  <img src="assets/icon/icon.png" alt="Sparks Logo" width="120"/>
 
-# Sparks Monorepo
 
-A full-stack ADHD management mobile application built with **Flutter (frontend)** and **Dart (backend with PostgreSQL)**, organized as a Dart/Flutter monorepo.
-This repository demonstrates a scalable, maintainable approach for modern cross-platform app development with a shared codebase.
+# Sparks Mobile Application
+
+<p align="center">
+  <b>All-in-one cross-platform app for modern, secure, and scalable experiences.</b><br />
+  <i>Built with Flutter for Android, iOS, Web, Windows, macOS, and Linux</i>
+</p>
 
 ---
 
-## Project Structure
+## 🚀 Overview
 
+Sparks is a robust, production-ready mobile application designed to deliver a seamless and engaging user experience across all major platforms. With a focus on security, performance, and modularity, Sparks is ideal for both end-users and developers seeking a scalable foundation.
+
+## ✨ Features
+
+- **Cross-Platform:** Android, iOS, Web, Windows, macOS, Linux
+- **State Management:** Efficient, scalable, and easy to maintain
+- **Custom Widgets:** Reusable, beautiful UI components
+- **Asset Management:** Organized structure for images, icons, and fonts
+- **Responsive Design:** Looks great on any device or screen size
+- **Fast Startup:** Optimized for quick launch and smooth navigation
+- **Easy Theming:** Quickly adapt the look and feel for your brand
+
+## 🛠️ Technologies Used
+
+- [Flutter](https://flutter.dev/) & [Dart](https://dart.dev/)
+- Platform Channels for native integrations
+- Secure Storage libraries
+- Modern state management (e.g., Provider, Riverpod, or Bloc)
+
+## 📁 Project Structure
+
+```text
+lib/
+  main.dart            # App entry point
+  screens/             # UI screens
+  services/            # Business logic and API calls
+  widgets/             # Reusable UI components
+assets/
+  icon/                # App icons
+  images/              # Image assets
+fonts/                 # Custom fonts
+android/               # Android-specific files
+ios/                   # iOS-specific files
+web/                   # Web-specific files
+linux/                 # Linux-specific files
+macos/                 # macOS-specific files
+windows/               # Windows-specific files
+test/                  # Unit and widget tests
 ```
-sparks_monorepo/
-├── apps/
-│   └── frontend/      # Flutter mobile app
-├── packages/
-│   ├── backend/       # Dart backend server (Shelf + PostgreSQL)
-│   └── shared/        # Shared Dart models & code
-├── melos.yaml         # Monorepo configuration
-└── README.md
-```
-
-
----
-
-## Features
-
-- Modern Flutter mobile UI
-- Dart backend API (Shelf) with PostgreSQL integration
-- Shared Dart package for models and DTOs
-- Secure password hashing
-- RESTful API endpoints for authentication
-- Monorepo structure using [melos](https://pub.dev/packages/melos)
-
----
 
 ## Getting Started
 
-### 1. Prerequisites
+### Prerequisites
 
-- [Dart SDK](https://dart.dev/get-dart)
 - [Flutter SDK](https://flutter.dev/docs/get-started/install)
-- [PostgreSQL](https://www.postgresql.org/)
-- [Melos](https://pub.dev/packages/melos):
+- [Dart SDK](https://dart.dev/get-dart)
+- Android Studio, Xcode, or Visual Studio Code
+
+### Installation
+
+1. **Clone the repository:**
+
+   ```sh
+   git clone https://github.com/sparkslk/sparks_monorepo.git
+   cd sparks_monorepo
+   ```
+
+2. **Install dependencies:**
+
+   ```sh
+   flutter pub get
+   ```
+
+3. **Run the app:**
+
+   - Android/iOS:
+
+     ```sh
+     flutter run
+     ```
+
+   - Web:
+
+     ```sh
+     flutter run -d chrome
+     ```
+
+   - Windows/macOS/Linux:
+
+     ```sh
+     flutter run -d windows  # or macos/linux
+     ```
+
+## Configuration
+
+- **Assets:** Place images in `assets/images/`, icons in `assets/icon/`, and fonts in `fonts/`.
+- **Environment Variables:** Configure any required environment variables in the appropriate files for each platform.
+
+## Testing
+
+Run widget and unit tests with:
 
 ```sh
-dart pub global activate melos
+flutter test
 ```
 
+## License
 
-### 2. Clone the Repository
-
-```sh
-git clone https://github.com/sparkslk/sparks_monorepo.git
-cd sparks_monorepo
-```
-
-
-### 3. Bootstrap the Monorepo
-
-```sh
-melos bootstrap
-```
-
+This project is licensed under the MIT License.
+See the [LICENSE](LICENSE) file for full license text and details on usage, distribution, and contributions.
 
 ---
-
-## Backend Setup
-
-### 1. Configure PostgreSQL
-
-- Ensure PostgreSQL is running and accessible.
-
-- Update database credentials in `packages/backend/lib/handlers.dart` if needed.
-
-
-### 2. Run the Backend Server
-
-```sh
-cd packages/backend
-dart run bin/server.dart
-```
-
-- By default, the backend listens on port `8080`.
-- Endpoints: (Examples)
-    - `POST /api/auth/register` — User registration
-    - `POST /api/auth/login` — User login
-
----
-
-## Frontend Setup
-
-### 1. Run the Flutter App
-
-```sh
-cd apps/frontend
-flutter pub get
-flutter run
-```
-
-- Make sure the API base URL in your Flutter app matches your backend server address and port.
-    - For Android emulator: use `http://10.0.2.2:8080`
-    - For physical device: use your PC's LAN IP (e.g., `http://192.168.1.100:8080`)
-    - For deployed backend: use your server's public IP
-
-
-### 2. Assets
-
-- Place your logo and feature icons in `apps/frontend/assets/` and declare them in `pubspec.yaml`.
-
----
-
-## Shared Package
-
-- Contains Dart models (e.g., `User`) used by both frontend and backend.
-- Located in `packages/shared`.
-
----
-© All Right Reserved - Sparks
+© All Right Reserved - Sparks 2025
