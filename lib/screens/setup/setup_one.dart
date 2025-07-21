@@ -5,7 +5,10 @@ class ProfileSetupStep1 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final _firstNameController = TextEditingController();
+    final _lastNameController = TextEditingController();
     final _phoneController = TextEditingController();
+    final _emailController = TextEditingController();
     final _dobController = TextEditingController();
     final _addressController = TextEditingController();
 
@@ -78,7 +81,6 @@ class ProfileSetupStep1 extends StatelessWidget {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: Color.fromRGBO(245, 243, 251, 1),
-
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
@@ -111,6 +113,130 @@ class ProfileSetupStep1 extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 18),
+                      // First Name and Last Name Row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _firstNameController,
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                              ),
+                              decoration: InputDecoration(
+                                labelText: 'First Name',
+                                hintText: 'Enter first name',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Color(0xff8159a8)),
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                                labelStyle: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 14,
+                                  letterSpacing: 1.0,
+                                ),
+                                hintStyle: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 14,
+                                  letterSpacing: 1.0,
+                                ),
+                              ),
+                              textCapitalization: TextCapitalization.words,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextField(
+                              controller: _lastNameController,
+                              style: const TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                              ),
+                              decoration: InputDecoration(
+                                labelText: 'Last Name',
+                                hintText: 'Enter last name',
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Color(0xff8159a8)),
+                                ),
+                                filled: true,
+                                fillColor: Colors.white,
+                                labelStyle: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 14,
+                                  letterSpacing: 1.0,
+                                ),
+                                hintStyle: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 14,
+                                  letterSpacing: 1.0,
+                                ),
+                              ),
+                              textCapitalization: TextCapitalization.words,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _emailController,
+                        style: const TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          letterSpacing: 1.0,
+                        ),
+                        decoration: InputDecoration(
+                          labelText: 'Email',
+                          hintText: 'example@email.com',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: Color(0xff8159a8)),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          suffixIcon: const Icon(Icons.email_outlined),
+                          labelStyle: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
+                          hintStyle: const TextStyle(
+                            fontFamily: 'Poppins',
+                            fontSize: 14,
+                            letterSpacing: 1.0,
+                          ),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      const SizedBox(height: 16),
                       TextField(
                         controller: _phoneController,
                         style: const TextStyle(
@@ -135,6 +261,7 @@ class ProfileSetupStep1 extends StatelessWidget {
                           ),
                           filled: true,
                           fillColor: Colors.white,
+                          suffixIcon: const Icon(Icons.phone_outlined),
                           labelStyle: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 14,

@@ -1,0 +1,504 @@
+import 'package:flutter/material.dart';
+
+class ProfileSetupStep3 extends StatelessWidget {
+  const ProfileSetupStep3({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    // In a real app, this data would be passed from previous screens
+    // For demonstration, I'm using sample data
+    final Map<String, dynamic> userData = {
+      'firstName': 'John',
+      'lastName': 'Doe',
+      'email': 'john.doe@example.com',
+      'phone': '+94 (555) 123-4567',
+      'dateOfBirth': '15/03/1990',
+      'gender': 'Male',
+      'address': '123 Main Street\nColombo 05\nSri Lanka',
+      'emergencyName': 'Jane Doe',
+      'emergencyPhone': '+94 (555) 987-6543',
+      'relationship': 'Spouse',
+      'medicalInfo': 'Allergic to peanuts\nTaking medication for hypertension',
+      'uploadedDocument': 'medical_report.pdf'
+    };
+
+    return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+      appBar: AppBar(
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+        elevation: 0,
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                Center(
+                  child: const Text(
+                    "Review Your Profile",
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xff8159a8),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Please review all the information below.\nMake sure everything is correct before confirming.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    color: Colors.black,
+                    letterSpacing: 1.0,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                // Stepper indicator
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildStepCircle(true),
+                    _buildStepLine(),
+                    _buildStepCircle(true),
+                    _buildStepLine(),
+                    _buildStepCircle(true),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Center(
+                  child: Text(
+                    'Step 3 of 3',
+                    style: TextStyle(
+                      fontFamily: 'Poppins',
+                      fontSize: 12,
+                      color: Color(0xff8159a8),
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 28),
+                
+                // Basic Information Summary
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Color.fromRGBO(245, 243, 251, 1),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Basic Information',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff8159a8),
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInfoRow('Name', '${userData['firstName']} ${userData['lastName']}'),
+                      _buildInfoRow('Email', userData['email']),
+                      _buildInfoRow('Phone', userData['phone']),
+                      _buildInfoRow('Date of Birth', userData['dateOfBirth']),
+                      _buildInfoRow('Gender', userData['gender']),
+                      _buildInfoRow('Address', userData['address']),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Emergency Contact Summary
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Color.fromRGBO(245, 243, 251, 1),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Emergency Contact',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff8159a8),
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInfoRow('Contact Name', userData['emergencyName']),
+                      _buildInfoRow('Contact Phone', userData['emergencyPhone']),
+                      _buildInfoRow('Relationship', userData['relationship']),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Medical Information Summary
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Color.fromRGBO(245, 243, 251, 1),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Medical Information',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xff8159a8),
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      _buildInfoRow('Medical Notes', 
+                        userData['medicalInfo']?.isNotEmpty == true 
+                          ? userData['medicalInfo'] 
+                          : 'No medical information provided'),
+                      if (userData['uploadedDocument'] != null)
+                        _buildDocumentRow('Uploaded Document', userData['uploadedDocument']),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 32),
+                
+                // Success Message
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.check_circle_outline,
+                        color: Colors.green[700],
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Profile Setup Complete!',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontWeight: FontWeight.w600,
+                                color: Colors.green[700],
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Your profile is ready. Click confirm to start using the app.',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13,
+                                color: Colors.green[600],
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 32),
+                
+                // Navigation buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xff8159a8)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(32),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 14,
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text(
+                        'Previous',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          letterSpacing: 1.0,
+                          color: Color(0xff8159a8),
+                        ),
+                      ),
+                    ),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xff8159a8),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(32),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 14,
+                        ),
+                      ),
+                      onPressed: () {
+                        _showConfirmDialog(context);
+                      },
+                      child: const Text(
+                        'Confirm',
+                        style: TextStyle(
+                          fontFamily: 'Poppins',
+                          fontSize: 16,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xff8159a8),
+                letterSpacing: 1.0,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 14,
+                color: Colors.black,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDocumentRow(String label, String fileName) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontFamily: 'Poppins',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Color(0xff8159a8),
+                letterSpacing: 1.0,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Row(
+              children: [
+                Icon(
+                  Icons.picture_as_pdf,
+                  size: 16,
+                  color: Color(0xff8159a8),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  fileName,
+                  style: const TextStyle(
+                    fontFamily: 'Poppins',
+                    fontSize: 14,
+                    color: Color(0xff8159a8),
+                    letterSpacing: 1.0,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStepCircle(bool filled) {
+    return Container(
+      width: 22,
+      height: 22,
+      decoration: BoxDecoration(
+        color: filled ? const Color(0xff8159a8) : Colors.white,
+        border: Border.all(color: const Color(0xff8159a8), width: 2),
+        shape: BoxShape.circle,
+      ),
+      child: filled
+          ? const Center(
+              child: Icon(Icons.check, size: 14, color: Colors.white),
+            )
+          : null,
+    );
+  }
+
+  Widget _buildStepLine() {
+    return Container(width: 32, height: 2, color: const Color(0xff8159a8));
+  }
+
+  void _showConfirmDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          backgroundColor: Colors.white,
+          title: const Text(
+            'Confirm Profile Setup',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontWeight: FontWeight.w600,
+              color: Color(0xff8159a8),
+              fontSize: 18,
+            ),
+          ),
+          content: const Text(
+            'Are you sure you want to complete your profile setup? You can always edit your information later.',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              fontSize: 14,
+              color: Colors.black,
+              letterSpacing: 1.0,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 14,
+                  color: Colors.grey,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xff8159a8),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _navigateToDashboard(context);
+              },
+              child: const Text(
+                'Confirm',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  fontSize: 14,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _navigateToDashboard(BuildContext context) {
+    // Show success message
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Profile setup completed successfully!'),
+        backgroundColor: Color(0xff8159a8),
+        duration: Duration(seconds: 3),
+      ),
+    );
+
+    // Navigate to dashboard - replace with your dashboard route
+    Navigator.pushReplacementNamed(context, '/dashboard');
+  }
+}
