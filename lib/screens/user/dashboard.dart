@@ -3,6 +3,7 @@ import '../../widgets/navbar.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '../../services/api_service.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -64,6 +65,15 @@ class _DashboardScreenState extends State<DashboardScreen>
     setState(() {
       _userName = name ?? 'User';
     });
+  }
+
+  Future<void> _logout() async {
+    await ApiService.logout();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    if (mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    }
   }
 
   @override
@@ -162,21 +172,24 @@ class _DashboardScreenState extends State<DashboardScreen>
           ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: const Color(0xFF8159A8),
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFF8159A8).withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
+            child: GestureDetector(
+              onTap: _logout,
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF8159A8),
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF8159A8).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.person, color: Colors.white, size: 22),
               ),
-              child: const Icon(Icons.person, color: Colors.white, size: 22),
             ),
           ),
         ],
@@ -429,38 +442,15 @@ class _DashboardScreenState extends State<DashboardScreen>
                   ],
                 ),
               ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF8159A8).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Text(
-                      '03:30 PM',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontFamily: 'Inter',
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF8159A8),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '31/07/2025',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontFamily: 'Inter',
-                      color: Color(0xFF6B7280),
-                    ),
-                  ),
-                ],
+              // ...existing code for appointment section...
+              const SizedBox(height: 8),
+              const Text(
+                '31/07/2025',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontFamily: 'Inter',
+                  color: Color(0xFF6B7280),
+                ),
               ),
             ],
           ),
