@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../widgets/navbar.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -46,8 +48,19 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   Future<void> _loadUserName() async {
     final prefs = await SharedPreferences.getInstance();
+    String? name;
+    // Try to get name from user_data (saved as JSON string)
+    final userDataStr = prefs.getString('user_data');
+    if (userDataStr != null && userDataStr.isNotEmpty) {
+      try {
+        final userData = jsonDecode(userDataStr);
+        if (userData is Map && userData['name'] != null && userData['name'].toString().trim().isNotEmpty) {
+          name = userData['name'];
+        }
+      } catch (_) {}
+    }
     setState(() {
-      _userName = prefs.getString('name') ?? 'User';
+      _userName = name ?? 'User';
     });
   }
 
