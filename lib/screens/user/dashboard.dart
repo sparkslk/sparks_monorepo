@@ -54,7 +54,9 @@ class _DashboardScreenState extends State<DashboardScreen>
     if (userDataStr != null && userDataStr.isNotEmpty) {
       try {
         final userData = jsonDecode(userDataStr);
-        if (userData is Map && userData['name'] != null && userData['name'].toString().trim().isNotEmpty) {
+        if (userData is Map &&
+            userData['name'] != null &&
+            userData['name'].toString().trim().isNotEmpty) {
           name = userData['name'];
         }
       } catch (_) {}
