@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../widgets/navbar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/api_service.dart';
+import 'dart:convert';
 
 class CompletedDayTasksPage extends StatefulWidget {
-  const CompletedDayTasksPage({Key? key}) : super(key: key);
+  final String taskId;
+  const CompletedDayTasksPage({Key? key, required this.taskId})
+    : super(key: key);
 
   @override
   State<CompletedDayTasksPage> createState() => _CompletedDayTasksPageState();
@@ -17,9 +21,18 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
   late Animation<Offset> _slideAnimation;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
-  
-  // Task tracking variables
-  String _currentStatus = 'Completed';
+
+  static const List<String> _statusOptions = [
+    'PENDING',
+    'IN_PROGRESS',
+    'COMPLETED',
+    'OVERDUE',
+  ];
+  String _currentStatus = 'PENDING';
+
+  Map<String, dynamic>? _taskDetails;
+  bool _loadingTask = false;
+  String? _taskError;
   DateTime? _completedDateTime;
   String _taskNotes = '';
   final TextEditingController _notesController = TextEditingController();
@@ -60,7 +73,69 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
     });
 
     _loadUserName();
-    _loadTaskData();
+    _fetchTaskDetails();
+  }
+
+  Future<void> _fetchTaskDetails() async {
+    setState(() {
+      _loadingTask = true;
+      _taskError = null;
+    });
+    try {
+      // Fetch task details from backend using the taskId
+      final response = await ApiService.authenticatedRequest(
+        'GET',
+        '/api/mobile/task/${widget.taskId}',
+      );
+      if (response.statusCode == 200 && response.body.isNotEmpty) {
+        final data = jsonDecode(response.body);
+        if (data['task'] != null) {
+          setState(() {
+            _taskDetails = data['task'];
+            _currentStatus = (_taskDetails!['status'] ?? 'PENDING').toString();
+            _taskNotes = _taskDetails!['notes'] ?? '';
+            _notesController.text = _taskNotes;
+            if (_taskDetails!['completedAt'] != null) {
+              _completedDateTime = DateTime.tryParse(
+                _taskDetails!['completedAt'],
+              );
+            } else {
+              _completedDateTime = null;
+            }
+          });
+        } else {
+          setState(() {
+            _taskError = 'Task not found.';
+          });
+        }
+      } else {
+        setState(() {
+          _taskError = 'Failed to load task details.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _taskError = 'Error loading task: $e';
+      });
+    }
+    setState(() {
+      _loadingTask = false;
+    });
+  }
+
+  String _statusLabel(String status) {
+    switch (status) {
+      case 'COMPLETED':
+        return 'Completed';
+      case 'PENDING':
+        return 'Pending';
+      case 'IN_PROGRESS':
+        return 'In Progress';
+      case 'OVERDUE':
+        return 'Overdue';
+      default:
+        return status;
+    }
   }
 
   Future<void> _loadUserName() async {
@@ -70,30 +145,15 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
     });
   }
 
-  Future<void> _loadTaskData() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _currentStatus = prefs.getString('task_status') ?? 'Completed';
-      _taskNotes = prefs.getString('task_notes') ?? 'Successfully implemented charts and graphs using Chart.js library. Performance optimization completed ahead of schedule. All responsive design requirements met. Client feedback was very positive.';
-      
-      // Load completion date/time if exists
-      final completedTimeString = prefs.getString('task_completed_time');
-      if (completedTimeString != null) {
-        _completedDateTime = DateTime.parse(completedTimeString);
-      } else if (_currentStatus == 'Completed') {
-        _completedDateTime = DateTime.now();
-      }
-      
-      _notesController.text = _taskNotes;
-    });
-  }
-
   Future<void> _saveTaskData() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('task_status', _currentStatus);
     await prefs.setString('task_notes', _taskNotes);
     if (_completedDateTime != null) {
-      await prefs.setString('task_completed_time', _completedDateTime!.toIso8601String());
+      await prefs.setString(
+        'task_completed_time',
+        _completedDateTime!.toIso8601String(),
+      );
     }
   }
 
@@ -101,18 +161,18 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
     if (newStatus != null) {
       setState(() {
         _currentStatus = newStatus;
-        if (newStatus == 'Completed') {
+        if (newStatus == 'COMPLETED') {
           _completedDateTime = DateTime.now();
         } else {
           _completedDateTime = null;
         }
       });
       _saveTaskData();
-      
+
       // Show status change feedback
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Task status updated to $newStatus'),
+          content: Text('Task status updated to ${_statusLabel(newStatus)}'),
           backgroundColor: _getStatusColor(newStatus),
           behavior: SnackBarBehavior.floating,
           duration: const Duration(seconds: 2),
@@ -123,12 +183,14 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
 
   Color _getStatusColor(String status) {
     switch (status) {
-      case 'Completed':
+      case 'COMPLETED':
         return const Color(0xFF10B981);
-      case 'Pending':
+      case 'PENDING':
         return const Color(0xFFF59E0B);
-      case 'Not Started':
-        return const Color(0xFF6B7280);
+      case 'IN_PROGRESS':
+        return const Color(0xFF6366F1);
+      case 'OVERDUE':
+        return const Color(0xFFEF4444);
       default:
         return const Color(0xFF6B7280);
     }
@@ -137,7 +199,7 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
   String _formatDateTime(DateTime dateTime) {
     final now = DateTime.now();
     final difference = now.difference(dateTime);
-    
+
     if (difference.inDays == 0) {
       return 'Today, ${_formatTime(dateTime)}';
     } else if (difference.inDays == 1) {
@@ -157,8 +219,18 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
 
   String _formatDate(DateTime dateTime) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[dateTime.month - 1]} ${dateTime.day}';
   }
@@ -242,34 +314,40 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
         },
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: SlideTransition(
-              position: _slideAnimation,
-              child: ScaleTransition(
-                scale: _scaleAnimation,
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Main Task Details Card
-                      _buildTaskDetailsCard(),
-                      const SizedBox(height: 24),
-                    ],
+        child: _loadingTask
+            ? const Center(child: CircularProgressIndicator())
+            : _taskError != null
+            ? Center(child: Text(_taskError!))
+            : _taskDetails == null
+            ? const Center(child: Text('No task details.'))
+            : SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: FadeTransition(
+                  opacity: _fadeAnimation,
+                  child: SlideTransition(
+                    position: _slideAnimation,
+                    child: ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildTaskDetailsCard(),
+                            const SizedBox(height: 24),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
-        ),
       ),
     );
   }
 
   Widget _buildTaskDetailsCard() {
+    final task = _taskDetails!;
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -300,7 +378,7 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
                     color: Color(0xFF1A1A1A),
                     height: 1.2,
                   ),
-                  child: const Text('Dashboard Analytics Implementation'),
+                  child: Text(task['title'] ?? '-'),
                 ),
               ),
               const SizedBox(width: 16),
@@ -313,14 +391,14 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
           // Description Section
           _buildSection(
             'Description',
-            'Implement analytics dashboard with real-time data visualization and reporting features. This includes creating interactive charts, graphs, and key performance indicators to help users track their progress and make data-driven decisions.',
+            task['description'] ?? 'No description provided.',
             Icons.description_outlined,
           ),
 
           const SizedBox(height: 20),
 
           // Tags Section
-          _buildTagsSection(),
+          _buildTagsSection(task),
 
           const SizedBox(height: 20),
 
@@ -330,7 +408,9 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
               Expanded(
                 child: _buildInfoCard(
                   'Task Date',
-                  'Today, Jul 17',
+                  task['dueDate'] != null
+                      ? _formatDateTime(DateTime.parse(task['dueDate']))
+                      : 'No due date',
                   Icons.calendar_today_outlined,
                   const Color(0xFF8159A8),
                 ),
@@ -338,11 +418,11 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
               const SizedBox(width: 12),
               Expanded(
                 child: _buildInfoCard(
-                  _currentStatus == 'Completed' ? 'Completed' : 'Status',
-                  _currentStatus == 'Completed' && _completedDateTime != null
+                  _currentStatus == 'COMPLETED' ? 'Completed' : 'Status',
+                  _currentStatus == 'COMPLETED' && _completedDateTime != null
                       ? _formatDateTime(_completedDateTime!)
-                      : _currentStatus,
-                  _currentStatus == 'Completed' 
+                      : _statusLabel(_currentStatus),
+                  _currentStatus == 'COMPLETED'
                       ? Icons.check_circle_outline
                       : Icons.pending_outlined,
                   _getStatusColor(_currentStatus),
@@ -377,7 +457,7 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
         ),
       ),
       child: DropdownButton<String>(
-        value: _currentStatus,
+        value: _statusOptions.contains(_currentStatus) ? _currentStatus : null,
         isDense: true,
         underline: Container(),
         style: TextStyle(
@@ -391,11 +471,33 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
           size: 16,
           color: _getStatusColor(_currentStatus),
         ),
-        items: [
-          _buildDropdownItem('Not Started', const Color(0xFF6B7280)),
-          _buildDropdownItem('Pending', const Color(0xFFF59E0B)),
-          _buildDropdownItem('Completed', const Color(0xFF10B981)),
-        ],
+        items: _statusOptions.map((status) {
+          return DropdownMenuItem<String>(
+            value: status,
+            child: Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: _getStatusColor(status),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _statusLabel(status),
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    color: _getStatusColor(status),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
         onChanged: _onStatusChanged,
       ),
     );
@@ -512,7 +614,9 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
             style: TextStyle(
               fontFamily: 'Inter',
               fontSize: 14,
-              color: _taskNotes.isEmpty ? const Color(0xFF9CA3AF) : const Color(0xFF1A1A1A),
+              color: _taskNotes.isEmpty
+                  ? const Color(0xFF9CA3AF)
+                  : const Color(0xFF1A1A1A),
               fontWeight: FontWeight.w400,
               height: 1.5,
             ),
@@ -600,8 +704,16 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
     );
   }
 
-  Widget _buildTagsSection() {
-    final tags = ['Analytics', 'Dashboard', 'Frontend', 'React', 'Chart.js'];
+  Widget _buildTagsSection(Map<String, dynamic> task) {
+    // Try to get tags as a List<String> or comma-separated string
+    List<String> tags = [];
+    if (task['tags'] is List) {
+      tags = List<String>.from(task['tags']);
+    } else if (task['tags'] is String) {
+      tags = (task['tags'] as String).split(',').map((e) => e.trim()).toList();
+    } else if (task['category'] != null) {
+      tags = [task['category'].toString()];
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -626,38 +738,47 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
           ],
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: tags
-              .map(
-                (tag) => AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF8159A8).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: const Color(0xFF8159A8).withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    tag,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 12,
-                      color: Color(0xFF8159A8),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+        tags.isEmpty
+            ? const Text(
+                'No tags',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12,
+                  color: Color(0xFF9CA3AF),
                 ),
               )
-              .toList(),
-        ),
+            : Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: tags
+                    .map(
+                      (tag) => AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF8159A8).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFF8159A8).withOpacity(0.2),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          tag,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            color: Color(0xFF8159A8),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
       ],
     );
   }

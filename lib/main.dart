@@ -59,7 +59,12 @@ class SparksApp extends StatelessWidget {
         '/add_task': (context) => NewTasksPage(),
         '/pomodoro_timer': (context) => PomodoroTimerPage(),
         '/completed_tasks': (context) => CompletedTasksPage(),
-        '/day_tasks': (context) => CompletedDayTasksPage(),
+        '/day_tasks': (context) {
+          final args =
+              ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>;
+          return CompletedDayTasksPage(taskId: args['taskId'] as String);
+        },
         '/past_summary': (context) {
           final appointment =
               ModalRoute.of(context)!.settings.arguments
@@ -73,7 +78,6 @@ class SparksApp extends StatelessWidget {
                   as Map<String, dynamic>;
           return SessionPage(appointment: appointment);
         },
-  
       },
     );
   }

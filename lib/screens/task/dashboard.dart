@@ -360,7 +360,7 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                         Navigator.pushNamed(
                           context,
                           '/day_tasks',
-                          arguments: {'task': task},
+                          arguments: {'taskId': task['id']},
                         );
                       },
                       child: _buildTaskItem(
@@ -409,7 +409,7 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                         Navigator.pushNamed(
                           context,
                           '/day_tasks',
-                          arguments: {'task': task},
+                          arguments: {'taskId': task['id']},
                         );
                       },
                       child: _buildTaskItem(
