@@ -247,6 +247,14 @@ class ApiService {
               body: body != null ? jsonEncode(body) : null,
             )
             .timeout(const Duration(seconds: 10));
+      case 'PATCH':
+        return http
+            .patch(
+              uri,
+              headers: headers,
+              body: body != null ? jsonEncode(body) : null,
+            )
+            .timeout(const Duration(seconds: 10));
       case 'DELETE':
         return http
             .delete(uri, headers: headers)
