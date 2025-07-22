@@ -3,6 +3,7 @@ import '../../widgets/navbar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../services/api_service.dart';
+
 class TaskDashboardPage extends StatefulWidget {
   const TaskDashboardPage({Key? key}) : super(key: key);
 
@@ -15,6 +16,10 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
   String? _userName;
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  List<Map<String, dynamic>> _yesterdayTasks = [];
+  List<Map<String, dynamic>> _todayTasks = [];
+  bool _loadingTasks = false;
+  String? _taskError;
 
   @override
   void initState() {
@@ -23,20 +28,17 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
-
     _fadeController.forward();
     _loadUserName();
+    _fetchTasks();
   }
-
 
   Future<void> _loadUserName() async {
     final prefs = await SharedPreferences.getInstance();
     String? name;
-    // Try to get name from user_data (saved as JSON string)
     final userDataStr = prefs.getString('user_data');
     if (userDataStr != null && userDataStr.isNotEmpty) {
       try {
@@ -50,6 +52,49 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
     }
     setState(() {
       _userName = name ?? 'User';
+    });
+  }
+
+  Future<void> _fetchTasks() async {
+    setState(() {
+      _loadingTasks = true;
+      _taskError = null;
+    });
+    try {
+      final response = await ApiService.authenticatedRequest(
+        'GET',
+        '/api/mobile/task?status=pending,not_started',
+      );
+      final data = response.body.isNotEmpty ? jsonDecode(response.body) : {};
+      if (response.statusCode == 200 && data['tasks'] is List) {
+        final now = DateTime.now();
+        final yesterday = now.subtract(const Duration(days: 1));
+        _yesterdayTasks = [];
+        _todayTasks = [];
+        for (final t in data['tasks']) {
+          if (t['dueDate'] != null) {
+            final due = DateTime.tryParse(t['dueDate']);
+            if (due != null) {
+              if (due.year == yesterday.year &&
+                  due.month == yesterday.month &&
+                  due.day == yesterday.day) {
+                _yesterdayTasks.add(t);
+              } else if (due.year == now.year &&
+                  due.month == now.month &&
+                  due.day == now.day) {
+                _todayTasks.add(t);
+              }
+            }
+          }
+        }
+      } else {
+        _taskError = data['error'] ?? 'Failed to load tasks.';
+      }
+    } catch (e) {
+      _taskError = 'Error loading tasks: $e';
+    }
+    setState(() {
+      _loadingTasks = false;
     });
   }
 
@@ -186,7 +231,10 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                         Row(
                           children: [
                             Expanded(
-                              child: _buildOverviewItem('8', 'Assigned Today'),
+                              child: _buildOverviewItem(
+                                '${_todayTasks.length}',
+                                'Assigned Today',
+                              ),
                             ),
                             Container(
                               width: 1,
@@ -194,14 +242,22 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                               color: Colors.white.withOpacity(0.3),
                             ),
                             Expanded(
-                              child: _buildOverviewItem('5', 'Completed'),
+                              child: _buildOverviewItem(
+                                '${_todayTasks.where((t) => t['status'] == 'completed').length}',
+                                'Completed',
+                              ),
                             ),
                             Container(
                               width: 1,
                               height: 40,
                               color: Colors.white.withOpacity(0.3),
                             ),
-                            Expanded(child: _buildOverviewItem('3', 'Pending')),
+                            Expanded(
+                              child: _buildOverviewItem(
+                                '${_todayTasks.where((t) => t['status'] == 'pending' || t['status'] == 'not_started').length}',
+                                'Pending',
+                              ),
+                            ),
                           ],
                         ),
                       ],
@@ -236,8 +292,10 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                           Icons.add_circle_outline,
                           const Color(0xFF8159A8),
                           () {
-                            // Navigate to add task page
-                            Navigator.pushNamed(context, '/add_task');
+                            Navigator.pushNamed(
+                              context,
+                              '/add_task',
+                            ).then((_) => _fetchTasks());
                           },
                         ),
                       ),
@@ -248,7 +306,6 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                           Icons.timer_outlined,
                           const Color(0xFF8159A8),
                           () {
-                            // Navigate to pomodoro timer
                             Navigator.pushNamed(context, '/pomodoro_timer');
                           },
                         ),
@@ -256,11 +313,10 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                       const SizedBox(width: 10),
                       Expanded(
                         child: _buildActionButton(
-                          'Completed Tasks',
+                          'Completed',
                           Icons.check_circle_outline,
                           const Color(0xFF8159A8),
                           () {
-                            // Navigate to completed tasks
                             Navigator.pushNamed(context, '/completed_tasks');
                           },
                         ),
@@ -281,45 +337,43 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Make yesterday's tasks clickable
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/day_tasks',
-                        arguments: {
-                          'date': DateTime.now().subtract(
-                            const Duration(days: 1),
-                          ),
-                        },
-                      );
-                    },
-                    child: _buildTaskItem(
-                      'Website Redesign Review',
-                      'UI/UX Design',
-                      'Overdue',
-                      'overdue',
+                  if (_loadingTasks)
+                    const Center(child: CircularProgressIndicator()),
+                  if (_taskError != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        _taskError!,
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  if (!_loadingTasks &&
+                      _yesterdayTasks.isEmpty &&
+                      _taskError == null)
+                    const Text(
+                      'No tasks for yesterday.',
+                      style: TextStyle(color: Color(0xFF6B7280)),
+                    ),
+                  ..._yesterdayTasks.map(
+                    (task) => GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/day_tasks',
+                          arguments: {'task': task},
+                        );
+                      },
+                      child: _buildTaskItem(
+                        task['title'] ?? '-',
+                        task['category'] ?? '-',
+                        task['dueDate'] != null
+                            ? 'Due: ${_formatDueTime(task['dueDate'])}'
+                            : '',
+                        _priorityString(task['priority']),
+                      ),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/day_tasks',
-                        arguments: {
-                          'date': DateTime.now().subtract(
-                            const Duration(days: 1),
-                          ),
-                        },
-                      );
-                    },
-                    child: _buildTaskItem(
-                      'Client Meeting Preparation',
-                      'Project Management',
-                      'Overdue',
-                      'overdue',
-                    ),
-                  ),
+
                   const SizedBox(height: 32),
                   // Today's Tasks Section
                   const Text(
@@ -332,82 +386,43 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                     ),
                   ),
                   const SizedBox(height: 16),
-                  // Make today's tasks clickable
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/day_tasks',
-                        arguments: {'date': DateTime.now()},
-                      );
-                    },
-                    child: _buildTaskItem(
-                      'Dashboard Analytics Implementation',
-                      'Product Design',
-                      'Due: 6:00 PM',
-                      'high',
+                  if (_loadingTasks)
+                    const Center(child: CircularProgressIndicator()),
+                  if (_taskError != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        _taskError!,
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ),
+                  if (!_loadingTasks &&
+                      _todayTasks.isEmpty &&
+                      _taskError == null)
+                    const Text(
+                      'No tasks for today.',
+                      style: TextStyle(color: Color(0xFF6B7280)),
+                    ),
+                  ..._todayTasks.map(
+                    (task) => GestureDetector(
+                      onTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          '/day_tasks',
+                          arguments: {'task': task},
+                        );
+                      },
+                      child: _buildTaskItem(
+                        task['title'] ?? '-',
+                        task['category'] ?? '-',
+                        task['dueDate'] != null
+                            ? 'Due: ${_formatDueTime(task['dueDate'])}'
+                            : '',
+                        _priorityString(task['priority']),
+                      ),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/day_tasks',
-                        arguments: {'date': DateTime.now()},
-                      );
-                    },
-                    child: _buildTaskItem(
-                      'Mobile App Testing',
-                      'App Development',
-                      'Due: 4:00 PM',
-                      'medium',
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/day_tasks',
-                        arguments: {'date': DateTime.now()},
-                      );
-                    },
-                    child: _buildTaskItem(
-                      'Brand Identity Research',
-                      'Branding',
-                      'Due: 8:00 PM',
-                      'low',
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/day_tasks',
-                        arguments: {'date': DateTime.now()},
-                      );
-                    },
-                    child: _buildTaskItem(
-                      'Team Standup Meeting',
-                      'Project Management',
-                      'Due: 10:00 AM',
-                      'medium',
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        '/day_tasks',
-                        arguments: {'date': DateTime.now()},
-                      );
-                    },
-                    child: _buildTaskItem(
-                      'Code Review Session',
-                      'Development',
-                      'Due: 2:00 PM',
-                      'high',
-                    ),
-                  ),
+
                   const SizedBox(height: 24),
                 ],
               ),
@@ -468,14 +483,7 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
         ),
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
+            Icon(icon, color: color, size: 24),
             const SizedBox(height: 8),
             Text(
               title,
@@ -617,7 +625,6 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
               const SizedBox(height: 12),
               GestureDetector(
                 onTap: () {
-                  // Navigate to task details
                   Navigator.pushNamed(
                     context,
                     '/task_details',
@@ -654,5 +661,25 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
         ],
       ),
     );
+  }
+
+  String _priorityString(dynamic priority) {
+    if (priority == 3) return 'high';
+    if (priority == 2) return 'medium';
+    if (priority == 1) return 'low';
+    return 'low';
+  }
+
+  String _formatDueTime(String dueDate) {
+    try {
+      final dt = DateTime.parse(dueDate);
+      final hour = dt.hour;
+      final minute = dt.minute.toString().padLeft(2, '0');
+      final period = hour >= 12 ? 'PM' : 'AM';
+      final displayHour = hour > 12 ? hour - 12 : (hour == 0 ? 12 : hour);
+      return '$displayHour:$minute $period';
+    } catch (_) {
+      return dueDate;
+    }
   }
 }
