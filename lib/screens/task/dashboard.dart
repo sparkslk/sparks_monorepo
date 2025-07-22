@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../widgets/navbar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'dart:convert';
+import '../../services/api_service.dart';
 class TaskDashboardPage extends StatefulWidget {
   const TaskDashboardPage({Key? key}) : super(key: key);
 
@@ -31,10 +32,24 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
     _loadUserName();
   }
 
+
   Future<void> _loadUserName() async {
     final prefs = await SharedPreferences.getInstance();
+    String? name;
+    // Try to get name from user_data (saved as JSON string)
+    final userDataStr = prefs.getString('user_data');
+    if (userDataStr != null && userDataStr.isNotEmpty) {
+      try {
+        final userData = jsonDecode(userDataStr);
+        if (userData is Map &&
+            userData['name'] != null &&
+            userData['name'].toString().trim().isNotEmpty) {
+          name = userData['name'];
+        }
+      } catch (_) {}
+    }
     setState(() {
-      _userName = prefs.getString('name') ?? 'Sandhavi';
+      _userName = name ?? 'User';
     });
   }
 
@@ -69,7 +84,7 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Hi, ${_userName ?? 'Bruce'}! 👋',
+              'Hi,  ${_userName ?? 'User'}! 👋',
               style: const TextStyle(
                 fontFamily: 'Poppins',
                 fontWeight: FontWeight.w600,
