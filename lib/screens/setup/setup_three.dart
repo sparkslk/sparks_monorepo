@@ -1,26 +1,90 @@
 import 'package:flutter/material.dart';
+import '../../services/api_service.dart';
 
-class ProfileSetupStep3 extends StatelessWidget {
+class ProfileSetupStep3 extends StatefulWidget {
   const ProfileSetupStep3({Key? key}) : super(key: key);
 
   @override
+  State<ProfileSetupStep3> createState() => _ProfileSetupStep3State();
+}
+
+class _ProfileSetupStep3State extends State<ProfileSetupStep3> {
+  Map<String, dynamic>? profile;
+  bool loading = true;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProfile();
+  }
+
+  Future<void> _fetchProfile() async {
+    setState(() {
+      loading = true;
+      error = null;
+    });
+    final res = await ApiService.getProfile();
+    print('DEBUG: API response: ' + res.toString());
+    dynamic profileData;
+    if (res['hasProfile'] == true && res['profile'] != null) {
+      profileData = res['profile'];
+    } else if (res['success'] == true && res['profile'] != null) {
+      // Handle double-wrapped structure
+      if (res['profile']['hasProfile'] == true &&
+          res['profile']['profile'] != null) {
+        profileData = res['profile']['profile'];
+      }
+    }
+    if (profileData != null) {
+      setState(() {
+        profile = profileData;
+        loading = false;
+      });
+    } else if (res['error'] != null) {
+      setState(() {
+        error = res['error'].toString();
+        loading = false;
+      });
+    } else {
+      setState(() {
+        error = res['message'] ?? 'Failed to load profile.';
+        loading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    // In a real app, this data would be passed from previous screens
-    // For demonstration, I'm using sample data
-    final Map<String, dynamic> userData = {
-      'firstName': 'John',
-      'lastName': 'Doe',
-      'email': 'john.doe@example.com',
-      'phone': '+94 (555) 123-4567',
-      'dateOfBirth': '15/03/1990',
-      'gender': 'Male',
-      'address': '123 Main Street\nColombo 05\nSri Lanka',
-      'emergencyName': 'Jane Doe',
-      'emergencyPhone': '+94 (555) 987-6543',
-      'relationship': 'Spouse',
-      'medicalInfo': 'Allergic to peanuts\nTaking medication for hypertension',
-      'uploadedDocument': 'medical_report.pdf'
-    };
+    if (loading) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (error != null) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: Center(
+          child: Text(error!, style: const TextStyle(color: Colors.red)),
+        ),
+      );
+    }
+    final userData = profile ?? {};
+    // Map emergency contact and medical info for display
+    final emergencyContact = userData['emergencyContact'] ?? {};
+    final emergencyName = emergencyContact['name'] ?? '';
+    final emergencyPhone = emergencyContact['phone'] ?? '';
+    final emergencyRelation = emergencyContact['relation'] ?? '';
+    final medicalHistory = userData['medicalHistory'] ?? '';
+    // Format date of birth to YYYY-MM-DD
+    String formattedDob = '';
+    if (userData['dateOfBirth'] != null &&
+        userData['dateOfBirth'].toString().isNotEmpty) {
+      final dobStr = userData['dateOfBirth'].toString();
+      if (dobStr.length >= 10) {
+        formattedDob = dobStr.substring(0, 10);
+      } else {
+        formattedDob = dobStr;
+      }
+    }
 
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 255, 255, 255),
@@ -84,7 +148,7 @@ class ProfileSetupStep3 extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 28),
-                
+
                 // Basic Information Summary
                 Container(
                   width: double.infinity,
@@ -113,18 +177,21 @@ class ProfileSetupStep3 extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _buildInfoRow('Name', '${userData['firstName']} ${userData['lastName']}'),
+                      _buildInfoRow(
+                        'Name',
+                        '${userData['firstName']} ${userData['lastName']}',
+                      ),
                       _buildInfoRow('Email', userData['email']),
                       _buildInfoRow('Phone', userData['phone']),
-                      _buildInfoRow('Date of Birth', userData['dateOfBirth']),
+                      _buildInfoRow('Date of Birth', formattedDob),
                       _buildInfoRow('Gender', userData['gender']),
                       _buildInfoRow('Address', userData['address']),
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Emergency Contact Summary
                 Container(
                   width: double.infinity,
@@ -153,15 +220,30 @@ class ProfileSetupStep3 extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _buildInfoRow('Contact Name', userData['emergencyName']),
-                      _buildInfoRow('Contact Phone', userData['emergencyPhone']),
-                      _buildInfoRow('Relationship', userData['relationship']),
+                      _buildInfoRow(
+                        'Contact Name',
+                        emergencyName.isNotEmpty
+                            ? emergencyName
+                            : 'Not provided',
+                      ),
+                      _buildInfoRow(
+                        'Contact Phone',
+                        emergencyPhone.isNotEmpty
+                            ? emergencyPhone
+                            : 'Not provided',
+                      ),
+                      _buildInfoRow(
+                        'Relationship',
+                        emergencyRelation.isNotEmpty
+                            ? emergencyRelation
+                            : 'Not provided',
+                      ),
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 20),
-                
+
                 // Medical Information Summary
                 Container(
                   width: double.infinity,
@@ -190,18 +272,23 @@ class ProfileSetupStep3 extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      _buildInfoRow('Medical Notes', 
-                        userData['medicalInfo']?.isNotEmpty == true 
-                          ? userData['medicalInfo'] 
-                          : 'No medical information provided'),
+                      _buildInfoRow(
+                        'Medical Notes',
+                        medicalHistory.isNotEmpty
+                            ? medicalHistory
+                            : 'No medical information provided',
+                      ),
                       if (userData['uploadedDocument'] != null)
-                        _buildDocumentRow('Uploaded Document', userData['uploadedDocument']),
+                        _buildDocumentRow(
+                          'Uploaded Document',
+                          userData['uploadedDocument'],
+                        ),
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Success Message
                 Container(
                   width: double.infinity,
@@ -248,9 +335,9 @@ class ProfileSetupStep3 extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 32),
-                
+
                 // Navigation buttons
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -305,7 +392,7 @@ class ProfileSetupStep3 extends StatelessWidget {
                     ),
                   ],
                 ),
-                
+
                 const SizedBox(height: 24),
               ],
             ),
@@ -315,7 +402,16 @@ class ProfileSetupStep3 extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(String label, dynamic value) {
+    // Convert any value to a string representation
+    final displayValue = value == null
+        ? 'Not provided'
+        : value is String
+        ? value.isNotEmpty
+              ? value
+              : 'Not provided'
+        : value.toString();
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -337,7 +433,7 @@ class ProfileSetupStep3 extends StatelessWidget {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              value,
+              displayValue,
               style: const TextStyle(
                 fontFamily: 'Poppins',
                 fontSize: 14,
@@ -374,11 +470,7 @@ class ProfileSetupStep3 extends StatelessWidget {
           Expanded(
             child: Row(
               children: [
-                Icon(
-                  Icons.picture_as_pdf,
-                  size: 16,
-                  color: Color(0xff8159a8),
-                ),
+                Icon(Icons.picture_as_pdf, size: 16, color: Color(0xff8159a8)),
                 const SizedBox(width: 8),
                 Text(
                   fileName,

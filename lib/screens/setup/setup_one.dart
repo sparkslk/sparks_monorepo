@@ -1,17 +1,107 @@
 import 'package:flutter/material.dart';
+import '../../services/api_service.dart';
 
-class ProfileSetupStep1 extends StatelessWidget {
+class ProfileSetupStep1 extends StatefulWidget {
   const ProfileSetupStep1({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final _firstNameController = TextEditingController();
-    final _lastNameController = TextEditingController();
-    final _phoneController = TextEditingController();
-    final _emailController = TextEditingController();
-    final _dobController = TextEditingController();
-    final _addressController = TextEditingController();
+  State<ProfileSetupStep1> createState() => _ProfileSetupStep1State();
+}
 
+class _ProfileSetupStep1State extends State<ProfileSetupStep1> {
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _dobController = TextEditingController();
+  final _addressController = TextEditingController();
+  final _dobFocusNode = FocusNode();
+  String? _selectedGender;
+  bool _loading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _preloadEmail();
+  }
+
+  Future<void> _preloadEmail() async {
+    final user = await ApiService.getCurrentUser();
+    if (user != null && user['email'] != null) {
+      setState(() {
+        _emailController.text = user['email'];
+      });
+    }
+  }
+
+  Future<void> _submitAndNext() async {
+    if (_firstNameController.text.trim().isEmpty ||
+        _lastNameController.text.trim().isEmpty ||
+        _dobController.text.trim().isEmpty ||
+        _selectedGender == null ||
+        _phoneController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all required fields.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    final phone = _phoneController.text.trim();
+    if (!RegExp(r'^0\d{9}$').hasMatch(phone)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid Contact Number'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _loading = true);
+    final response = await ApiService.authenticatedRequest(
+      'POST',
+      '/api/mobile/profile',
+      body: {
+        'firstName': _firstNameController.text.trim(),
+        'lastName': _lastNameController.text.trim(),
+        'dateOfBirth': _dobController.text.trim(),
+        'gender': _selectedGender?.toUpperCase(),
+        'phone': _phoneController.text.trim(),
+        'address': _addressController.text.trim(),
+        'email': _emailController.text.trim(),
+      },
+    );
+    setState(() => _loading = false);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      Navigator.pushReplacementNamed(context, '/setup_two');
+    } else {
+      String msg = 'Failed to save profile.';
+      try {
+        final data = response.body.isNotEmpty ? response.body : null;
+        if (data != null) msg = data;
+      } catch (_) {}
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
+    }
+  }
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _phoneController.dispose();
+    _emailController.dispose();
+    _dobController.dispose();
+    _addressController.dispose();
+    _dobFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       appBar: AppBar(
@@ -129,15 +219,21 @@ class ProfileSetupStep1 extends StatelessWidget {
                                 hintText: 'Enter first name',
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xffe0e0e0),
+                                  ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xffe0e0e0),
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(color: Color(0xff8159a8)),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xff8159a8),
+                                  ),
                                 ),
                                 filled: true,
                                 fillColor: Colors.white,
@@ -169,15 +265,21 @@ class ProfileSetupStep1 extends StatelessWidget {
                                 hintText: 'Enter last name',
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xffe0e0e0),
+                                  ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xffe0e0e0),
+                                  ),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(color: Color(0xff8159a8)),
+                                  borderSide: const BorderSide(
+                                    color: Color(0xff8159a8),
+                                  ),
                                 ),
                                 filled: true,
                                 fillColor: Colors.white,
@@ -200,25 +302,33 @@ class ProfileSetupStep1 extends StatelessWidget {
                       const SizedBox(height: 16),
                       TextField(
                         controller: _emailController,
+                        enabled: false,
                         style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 16,
                           letterSpacing: 1.0,
+                          color: Colors.grey,
                         ),
                         decoration: InputDecoration(
                           labelText: 'Email',
                           hintText: 'example@email.com',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xff8159a8)),
+                            borderSide: const BorderSide(
+                              color: Color(0xff8159a8),
+                            ),
                           ),
                           filled: true,
                           fillColor: Colors.white,
@@ -246,18 +356,24 @@ class ProfileSetupStep1 extends StatelessWidget {
                         ),
                         decoration: InputDecoration(
                           labelText: 'Phone',
-                          hintText: '+94 (555) 123-4567',
+                          hintText: '071 234 5678',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xff8159a8)),
+                            borderSide: const BorderSide(
+                              color: Color(0xff8159a8),
+                            ),
                           ),
                           filled: true,
                           fillColor: Colors.white,
@@ -278,6 +394,8 @@ class ProfileSetupStep1 extends StatelessWidget {
                       const SizedBox(height: 16),
                       TextField(
                         controller: _dobController,
+                        focusNode: _dobFocusNode,
+                        readOnly: true,
                         style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 16,
@@ -288,19 +406,42 @@ class ProfileSetupStep1 extends StatelessWidget {
                           hintText: 'dd/mm/yyyy',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xff8159a8)),
+                            borderSide: const BorderSide(
+                              color: Color(0xff8159a8),
+                            ),
                           ),
                           filled: true,
                           fillColor: Colors.white,
-                          suffixIcon: const Icon(Icons.calendar_today),
+                          suffixIcon: IconButton(
+                            icon: const Icon(Icons.calendar_today),
+                            onPressed: () async {
+                              FocusScope.of(context).requestFocus(FocusNode());
+                              DateTime? picked = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now().subtract(
+                                  const Duration(days: 365 * 18),
+                                ),
+                                firstDate: DateTime(1900),
+                                lastDate: DateTime.now(),
+                              );
+                              if (picked != null) {
+                                _dobController.text =
+                                    "${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+                              }
+                            },
+                          ),
                           labelStyle: const TextStyle(
                             fontFamily: 'Poppins',
                             fontSize: 14,
@@ -313,9 +454,25 @@ class ProfileSetupStep1 extends StatelessWidget {
                           ),
                         ),
                         keyboardType: TextInputType.datetime,
+                        onTap: () async {
+                          FocusScope.of(context).requestFocus(FocusNode());
+                          DateTime? picked = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now().subtract(
+                              const Duration(days: 365 * 18),
+                            ),
+                            firstDate: DateTime(1900),
+                            lastDate: DateTime.now(),
+                          );
+                          if (picked != null) {
+                            _dobController.text =
+                                "${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+                          }
+                        },
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
+                        value: _selectedGender,
                         style: const TextStyle(
                           fontFamily: 'Poppins',
                           fontSize: 16,
@@ -327,15 +484,21 @@ class ProfileSetupStep1 extends StatelessWidget {
                           hintText: 'Select gender',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xff8159a8)),
+                            borderSide: const BorderSide(
+                              color: Color(0xff8159a8),
+                            ),
                           ),
                           filled: true,
                           fillColor: Colors.white,
@@ -364,7 +527,7 @@ class ProfileSetupStep1 extends StatelessWidget {
                                 letterSpacing: 1.0,
                               ),
                             ),
-                            value: 'male',
+                            value: 'MALE',
                           ),
                           DropdownMenuItem(
                             child: Text(
@@ -375,10 +538,25 @@ class ProfileSetupStep1 extends StatelessWidget {
                                 letterSpacing: 1.0,
                               ),
                             ),
-                            value: 'female',
+                            value: 'FEMALE',
+                          ),
+                          DropdownMenuItem(
+                            child: Text(
+                              'Other',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                            value: 'OTHER',
                           ),
                         ],
-                        onChanged: (value) {},
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedGender = value;
+                          });
+                        },
                       ),
                       const SizedBox(height: 16),
                       TextField(
@@ -393,15 +571,21 @@ class ProfileSetupStep1 extends StatelessWidget {
                           hintText: 'Enter your full address',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xff8159a8)),
+                            borderSide: const BorderSide(
+                              color: Color(0xff8159a8),
+                            ),
                           ),
                           filled: true,
                           fillColor: Colors.white,
@@ -462,17 +646,24 @@ class ProfileSetupStep1 extends StatelessWidget {
                           vertical: 14,
                         ),
                       ),
-                      onPressed: () {
-                        Navigator.pushReplacementNamed(context, '/setup_two');
-                      },
-                      child: const Text(
-                        'Next',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          fontSize: 16,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
+                      onPressed: _loading ? null : _submitAndNext,
+                      child: _loading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text(
+                              'Next',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 16,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
                     ),
                   ],
                 ),

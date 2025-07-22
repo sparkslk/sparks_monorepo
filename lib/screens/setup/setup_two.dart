@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import '../../services/api_service.dart';
 
 class ProfileSetupStep2 extends StatefulWidget {
   const ProfileSetupStep2({Key? key}) : super(key: key);
@@ -129,15 +130,21 @@ class _ProfileSetupStep2State extends State<ProfileSetupStep2> {
                           hintText: 'Enter full name',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xff8159a8)),
+                            borderSide: const BorderSide(
+                              color: Color(0xff8159a8),
+                            ),
                           ),
                           filled: true,
                           fillColor: Colors.white,
@@ -165,18 +172,24 @@ class _ProfileSetupStep2State extends State<ProfileSetupStep2> {
                         ),
                         decoration: InputDecoration(
                           labelText: 'Emergency Phone Number *',
-                          hintText: '+94 (555) 123-4567',
+                          hintText: '071 234 5678',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xff8159a8)),
+                            borderSide: const BorderSide(
+                              color: Color(0xff8159a8),
+                            ),
                           ),
                           filled: true,
                           fillColor: Colors.white,
@@ -208,15 +221,21 @@ class _ProfileSetupStep2State extends State<ProfileSetupStep2> {
                           hintText: 'Select relationship',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xff8159a8)),
+                            borderSide: const BorderSide(
+                              color: Color(0xff8159a8),
+                            ),
                           ),
                           filled: true,
                           fillColor: Colors.white,
@@ -363,15 +382,21 @@ class _ProfileSetupStep2State extends State<ProfileSetupStep2> {
                           hintText: 'Any allergies, conditions, medications...',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xffe0e0e0)),
+                            borderSide: const BorderSide(
+                              color: Color(0xffe0e0e0),
+                            ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
-                            borderSide: const BorderSide(color: Color(0xff8159a8)),
+                            borderSide: const BorderSide(
+                              color: Color(0xff8159a8),
+                            ),
                           ),
                           filled: true,
                           fillColor: Colors.white,
@@ -414,16 +439,17 @@ class _ProfileSetupStep2State extends State<ProfileSetupStep2> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              _uploadedFileName ?? 'Upload Medical Document (PDF)',
+                              _uploadedFileName ??
+                                  'Upload Medical Document (PDF)',
                               style: TextStyle(
                                 fontFamily: 'Poppins',
                                 fontSize: 14,
                                 letterSpacing: 1.0,
-                                color: _uploadedFileName != null 
-                                    ? Color(0xff8159a8) 
+                                color: _uploadedFileName != null
+                                    ? Color(0xff8159a8)
                                     : Colors.grey[600],
-                                fontWeight: _uploadedFileName != null 
-                                    ? FontWeight.w500 
+                                fontWeight: _uploadedFileName != null
+                                    ? FontWeight.w500
                                     : FontWeight.normal,
                               ),
                               textAlign: TextAlign.center,
@@ -442,7 +468,9 @@ class _ProfileSetupStep2State extends State<ProfileSetupStep2> {
                             const SizedBox(height: 12),
                             OutlinedButton.icon(
                               style: OutlinedButton.styleFrom(
-                                side: const BorderSide(color: Color(0xff8159a8)),
+                                side: const BorderSide(
+                                  color: Color(0xff8159a8),
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(8),
                                 ),
@@ -458,7 +486,9 @@ class _ProfileSetupStep2State extends State<ProfileSetupStep2> {
                                 color: Color(0xff8159a8),
                               ),
                               label: Text(
-                                _uploadedFileName != null ? 'Change Document' : 'Browse Files',
+                                _uploadedFileName != null
+                                    ? 'Change Document'
+                                    : 'Browse Files',
                                 style: const TextStyle(
                                   fontFamily: 'Poppins',
                                   fontSize: 14,
@@ -539,7 +569,7 @@ class _ProfileSetupStep2State extends State<ProfileSetupStep2> {
     setState(() {
       _uploadedFileName = "medical_report.pdf";
     });
-    
+
     // Show a snackbar to indicate file selection
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -550,12 +580,10 @@ class _ProfileSetupStep2State extends State<ProfileSetupStep2> {
     );
   }
 
-  void _validateAndNext() {
-    // Validate mandatory fields
+  void _validateAndNext() async {
     if (_emergencyNameController.text.trim().isEmpty ||
         _emergencyPhoneController.text.trim().isEmpty ||
         _selectedRelationship == null) {
-      
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please fill in all mandatory fields (*)'),
@@ -566,8 +594,62 @@ class _ProfileSetupStep2State extends State<ProfileSetupStep2> {
       return;
     }
 
-    // Navigate to next step
-    Navigator.pushReplacementNamed(context, '/setup_three');
+    final emergencyPhone = _emergencyPhoneController.text.trim();
+    if (!RegExp(r'^0\d{9} ?$').hasMatch(emergencyPhone)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Invalid Contact Number'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    // Save to backend (PATCH)
+    final response = await ApiService.authenticatedRequest(
+      'PATCH',
+      '/api/mobile/profile',
+      body: {
+        'emergencyContactName': _emergencyNameController.text.trim(),
+        'emergencyContactPhone': _emergencyPhoneController.text.trim(),
+        'emergencyContactRelation': _selectedRelationship,
+        'medicalInfo': _medicalInfoController.text.trim(),
+      },
+    );
+    if (response.statusCode == 200) {
+      Navigator.pushReplacementNamed(context, '/setup_three');
+    } else {
+      // Show more informative error message if available
+      String errorMessage = 'Failed to save emergency/medical info.';
+
+      // Log the error details
+      print('Error response: ${response.statusCode} - ${response.body}');
+
+      try {
+        final responseBody = response.body;
+        if (responseBody.contains('error')) {
+          // Try to extract error message from JSON response
+          final errorStart = responseBody.indexOf('"error":"');
+          if (errorStart != -1) {
+            final start = errorStart + 9; // Length of '"error":"'
+            final end = responseBody.indexOf('"', start);
+            if (end != -1) {
+              errorMessage = responseBody.substring(start, end);
+            }
+          }
+        }
+      } catch (e) {
+        // Keep default error message if parsing fails
+        print('Error parsing response: $e');
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   Widget _buildStepCircle(bool filled) {
