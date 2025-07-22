@@ -30,6 +30,11 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
   ];
   String _currentStatus = 'PENDING';
 
+  // Added missing fields for state tracking and saving
+  String _originalStatus = 'PENDING';
+  String _originalNotes = '';
+  bool _isSaving = false;
+
   Map<String, dynamic>? _taskDetails;
   bool _loadingTask = false;
   String? _taskError;
@@ -93,7 +98,7 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
           setState(() {
             _taskDetails = data['task'];
             _currentStatus = (_taskDetails!['status'] ?? 'PENDING').toString();
-            _taskNotes = _taskDetails!['notes'] ?? '';
+            _taskNotes = _taskDetails!['completionNotes'] ?? '';
             _notesController.text = _taskNotes;
             if (_taskDetails!['completedAt'] != null) {
               _completedDateTime = DateTime.tryParse(
@@ -102,6 +107,8 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
             } else {
               _completedDateTime = null;
             }
+            _originalStatus = _currentStatus;
+            _originalNotes = _taskNotes;
           });
         } else {
           setState(() {
@@ -167,17 +174,62 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
           _completedDateTime = null;
         }
       });
-      _saveTaskData();
+    }
+  }
 
-      // Show status change feedback
+  bool _canSave() {
+    return _currentStatus != _originalStatus || _taskNotes != _originalNotes;
+  }
+
+  Future<void> _saveTaskToBackend() async {
+    setState(() {
+      _isSaving = true;
+    });
+    try {
+      final body = {
+        'status': _currentStatus,
+        'completionNotes': _taskNotes,
+        if (_currentStatus == 'COMPLETED')
+          'completedAt': DateTime.now().toIso8601String(),
+      };
+      final response = await ApiService.authenticatedRequest(
+        'PUT',
+        '/api/mobile/task/${widget.taskId}',
+        body: body,
+      );
+      if (response.statusCode == 200) {
+        setState(() {
+          _originalStatus = _currentStatus;
+          _originalNotes = _taskNotes;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Task updated successfully!'),
+            backgroundColor: Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update task: ${response.body}'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Task status updated to ${_statusLabel(newStatus)}'),
-          backgroundColor: _getStatusColor(newStatus),
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 2),
         ),
       );
+    } finally {
+      setState(() {
+        _isSaving = false;
+      });
     }
   }
 
@@ -383,6 +435,33 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
               ),
               const SizedBox(width: 16),
               _buildStatusDropdown(),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Save button
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _canSave() && !_isSaving
+                      ? _saveTaskToBackend
+                      : null,
+                  icon: _isSaving
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save_alt),
+                  label: const Text('Save'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF10B981),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
             ],
           ),
 
@@ -592,7 +671,43 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
             ),
             const Spacer(),
             IconButton(
-              onPressed: _showNotesDialog,
+              onPressed: () async {
+                final result = await showDialog<String>(
+                  context: context,
+                  builder: (BuildContext context) {
+                    final controller = TextEditingController(text: _taskNotes);
+                    return AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      title: const Text('Edit Notes'),
+                      content: TextField(
+                        controller: controller,
+                        maxLines: 5,
+                        decoration: const InputDecoration(
+                          hintText: 'Add your notes here...',
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () =>
+                              Navigator.pop(context, controller.text),
+                          child: const Text('Save'),
+                        ),
+                      ],
+                    );
+                  },
+                );
+                if (result != null) {
+                  setState(() {
+                    _taskNotes = result;
+                  });
+                }
+              },
               icon: const Icon(
                 Icons.edit_outlined,
                 size: 16,
