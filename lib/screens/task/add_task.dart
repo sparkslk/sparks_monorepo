@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../widgets/navbar.dart';
+import '../../services/api_service.dart';
+import 'dart:convert';
 
 class NewTasksPage extends StatefulWidget {
   @override
@@ -437,23 +439,65 @@ class _NewTasksPageState extends State<NewTasksPage>
     );
   }
 
-  void _handleCreateTask() {
-    // Add your task creation logic here
-    print('Task Title: ${_titleController.text}');
-    print('Priority: $selectedPriority');
-    print(
-      'Date: ${selectedDate != null ? selectedDate!.toIso8601String() : 'Not selected'}',
-    );
-    print('Description: ${_descriptionController.text}');
-    print('Category: $selectedCategory');
-    print('Alert Enabled: $isAlertEnabled');
+  Future<void> _handleCreateTask() async {
+    final title = _titleController.text.trim();
+    final description = _descriptionController.text.trim();
+    final priorityMap = {'High': 3, 'Medium': 2, 'Low': 1};
+    final priority = priorityMap[selectedPriority] ?? 1;
+    final dueDate = selectedDate?.toIso8601String();
 
-    // Show success message or navigate back
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Task created successfully!'),
-        backgroundColor: primaryColor,
-      ),
+    if (title.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Task title is required.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Center(child: CircularProgressIndicator()),
     );
+
+    try {
+      final response = await ApiService.authenticatedRequest(
+        'POST',
+        '/api/mobile/task',
+        body: {
+          'title': title,
+          'description': description.isNotEmpty ? description : null,
+          'priority': priority,
+          'category': selectedCategory,
+          'dueDate': dueDate,
+          // Optionally add: 'instructions', 'isRecurring', 'recurringPattern', 'sessionid', 'category', 'alertEnabled'
+        },
+      );
+      Navigator.of(context, rootNavigator: true).pop(); // Close loading
+      final data = response.body.isNotEmpty ? jsonDecode(response.body) : {};
+      if (response.statusCode == 201 && data['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Task created successfully!'),
+            backgroundColor: primaryColor,
+          ),
+        );
+        Navigator.pop(context); // Go back to previous screen
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data['error'] ?? 'Failed to create task.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      Navigator.of(context, rootNavigator: true).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+      );
+    }
   }
 }
