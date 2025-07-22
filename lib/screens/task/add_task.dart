@@ -444,7 +444,10 @@ class _NewTasksPageState extends State<NewTasksPage>
     final description = _descriptionController.text.trim();
     final priorityMap = {'High': 3, 'Medium': 2, 'Low': 1};
     final priority = priorityMap[selectedPriority] ?? 1;
-    final dueDate = selectedDate?.toIso8601String();
+    // Add 5 hours and 30 minutes to the selected date
+    final dueDate = selectedDate != null
+        ? selectedDate!.add(Duration(hours: 6, minutes: 10)).toString()
+        : null;
 
     if (title.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(

@@ -190,7 +190,9 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
         'status': _currentStatus,
         'completionNotes': _taskNotes,
         if (_currentStatus == 'COMPLETED')
-          'completedAt': DateTime.now().toIso8601String(),
+          'completedAt': DateTime.now()
+              .add(const Duration(hours: 5, minutes: 30))
+              .toIso8601String(),
       };
       final response = await ApiService.authenticatedRequest(
         'PUT',
