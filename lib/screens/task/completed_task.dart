@@ -175,19 +175,15 @@ class _CompletedTasksPageState extends State<CompletedTasksPage>
                         ),
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF8159A8),
+                         color: const Color.fromARGB(246, 147, 104, 191),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             _buildSummaryItem(
                               _getTasksForDay(_selectedDay).length.toString(),
                               'Tasks',
-                            ),
-                            _buildSummaryItem(
-                              _getTotalDuration(_getTasksForDay(_selectedDay)),
-                              'Total Duration',
                             ),
                           ],
                         ),
@@ -313,30 +309,6 @@ class _CompletedTasksPageState extends State<CompletedTasksPage>
 
   bool _hasTasksForDay(DateTime day) {
     return _completedTasks.containsKey(DateTime(day.year, day.month, day.day));
-  }
-
-  String _getTotalDuration(List<Map<String, dynamic>> tasks) {
-    if (tasks.isEmpty) return '0h 0m';
-
-    int totalMinutes = 0;
-    for (var task in tasks) {
-      String duration = task['duration'] ?? '0m';
-      RegExp regExp = RegExp(r'(\d+)h|(\d+)m');
-      Iterable<RegExpMatch> matches = regExp.allMatches(duration);
-
-      for (RegExpMatch match in matches) {
-        if (match.group(1) != null) {
-          totalMinutes += int.parse(match.group(1)!) * 60;
-        }
-        if (match.group(2) != null) {
-          totalMinutes += int.parse(match.group(2)!);
-        }
-      }
-    }
-
-    int hours = totalMinutes ~/ 60;
-    int minutes = totalMinutes % 60;
-    return '${hours}h ${minutes}m';
   }
 
   List<DateTime> _getDaysInMonth(DateTime month) {
@@ -609,12 +581,23 @@ class _CompletedTasksPageState extends State<CompletedTasksPage>
     // Defensive: fallback values for all fields
     final String title = (task['title'] ?? 'Untitled').toString();
     final String category = (task['category'] ?? 'Uncategorized').toString();
-    final String completedAt = (task['completedAt'] ?? task['dueDate'] ?? '')
+    String completedAtRaw = (task['completedAt'] ?? task['dueDate'] ?? '')
         .toString();
+    String completedAt = '';
+    if (completedAtRaw.isNotEmpty) {
+      try {
+        final dt = DateTime.parse(completedAtRaw);
+        completedAt =
+            '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}, '
+            '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
+      } catch (_) {
+        completedAt = completedAtRaw;
+      }
+    }
     final String priority = (task['priority'] ?? 'low')
         .toString()
         .toLowerCase();
-    final String duration = (task['duration'] ?? '0m').toString();
+    // final String duration = (task['duration'] ?? '0m').toString();
 
     Color priorityColor;
     switch (priority) {
@@ -694,16 +677,6 @@ class _CompletedTasksPageState extends State<CompletedTasksPage>
                         fontFamily: 'Inter',
                         fontSize: 12,
                         color: Color(0xFF10B981),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      'Duration: $duration',
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        color: Color(0xFF8159A8),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
