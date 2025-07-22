@@ -175,7 +175,7 @@ class _CompletedTasksPageState extends State<CompletedTasksPage>
                         ),
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                         color: const Color.fromARGB(246, 147, 104, 191),
+                          color: const Color.fromARGB(246, 147, 104, 191),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Row(

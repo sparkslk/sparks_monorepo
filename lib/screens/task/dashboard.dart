@@ -61,9 +61,10 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
       _taskError = null;
     });
     try {
+      // Fetch all tasks (all statuses) for accurate overview
       final response = await ApiService.authenticatedRequest(
         'GET',
-        '/api/mobile/task?status=pending,not_started',
+        '/api/mobile/task',
       );
       final data = response.body.isNotEmpty ? jsonDecode(response.body) : {};
       if (response.statusCode == 200 && data['tasks'] is List) {
@@ -96,6 +97,13 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
     setState(() {
       _loadingTasks = false;
     });
+  }
+
+  Map<DateTime, List<Map<String, dynamic>>> _completedTasks = {};
+  bool _isLoading = true;
+  String? _error;
+  List<Map<String, dynamic>> _getTasksForDay(DateTime day) {
+    return _completedTasks[DateTime(day.year, day.month, day.day)] ?? [];
   }
 
   @override
@@ -243,7 +251,10 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                             ),
                             Expanded(
                               child: _buildOverviewItem(
-                                '${_todayTasks.where((t) => t['status'] == 'completed').length}',
+                                '${_todayTasks.where((t) {
+                                  final status = t['status'].toString().toUpperCase();
+                                  return status == 'COMPLETED' || status == 'DONE' || status == 'FINISHED';
+                                }).length}',
                                 'Completed',
                               ),
                             ),
@@ -254,7 +265,10 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                             ),
                             Expanded(
                               child: _buildOverviewItem(
-                                '${_todayTasks.where((t) => t['status'] == 'pending' || t['status'] == 'not_started').length}',
+                                '${_todayTasks.where((t) {
+                                  final status = t['status'].toString().toUpperCase();
+                                  return status == 'PENDING' || status == 'NOT_STARTED' || status == 'IN_PROGRESS';
+                                }).length}',
                                 'Pending',
                               ),
                             ),
