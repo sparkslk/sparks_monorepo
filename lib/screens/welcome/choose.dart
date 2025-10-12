@@ -5,7 +5,7 @@ class ChooseScreen extends StatelessWidget {
   const ChooseScreen({Key? key}) : super(key: key);
 
   Future<void> _launchURL() async {
-    final Uri url = Uri.parse('https://sparks.help/');
+    final Uri url = Uri.parse('https://sparks.help/quiz/');
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       throw Exception('Could not launch $url');
     }
