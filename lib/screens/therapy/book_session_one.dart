@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../widgets/navbar.dart';
 import '../../widgets/therapy_appbar.dart';
+import '../../services/api_service.dart';
+import '../../services/payment_service.dart';
+import 'package:intl/intl.dart';
 
 class BookSessionOnePage extends StatefulWidget {
   @override
@@ -10,26 +13,415 @@ class BookSessionOnePage extends StatefulWidget {
 class _BookSessionOnePageState extends State<BookSessionOnePage> {
   final Color primaryPurple = Color(0xff8159a8);
   int selectedDateIndex = 0;
-  String selectedTimeSlot = "10:00 AM - 11:00 AM";
+  String? selectedTimeSlot;
   bool showCalendar = false;
-  DateTime selectedDate = DateTime(2025, 6, 22);
+  DateTime selectedDate = DateTime.now();
 
-  final List<Map<String, String>> dates = [
-    {"day": "Mon", "date": "22", "month": "Jun", "year": "2025"},
-    {"day": "Tue", "date": "23", "month": "Jun", "year": "2025"},
-    {"day": "Wed", "date": "24", "month": "Jun", "year": "2025"},
-    {"day": "Thu", "date": "25", "month": "Jun", "year": "2025"},
-    {"day": "Fri", "date": "26", "month": "Jun", "year": "2025"},
-  ];
+  // API data
+  String? therapistId; // Store therapistId from navigation
+  dynamic therapistData;
+  List<dynamic> availableSlots = [];
+  bool isLoadingTherapist = true;
+  bool isLoadingSlots = false;
+  bool isBooking = false;
+  String errorMessage = '';
 
-  final List<String> timeSlots = [
-    "9:00 AM - 10:00 AM",
-    "10:00 AM - 11:00 AM",
-    "11:00 AM - 12:00 AM",
-    "12:00 AM - 1:00 PM",
-    "1:00 PM - 2:00 PM",
-    "2:00 PM - 3:00 PM",
-  ];
+  // Generated dates list
+  List<DateTime> dates = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _generateDates();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Get therapistId from navigation arguments
+    if (therapistId == null) {
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is String) {
+        therapistId = args;
+        _fetchTherapistData();
+      }
+    }
+  }
+
+  void _generateDates() {
+    dates.clear();
+    for (int i = 0; i < 7; i++) {
+      dates.add(DateTime.now().add(Duration(days: i)));
+    }
+    selectedDate = dates[0];
+  }
+
+  Future<void> _fetchTherapistData() async {
+    if (therapistId == null) {
+      setState(() {
+        errorMessage = 'No therapist selected. Please select a therapist first.';
+        isLoadingTherapist = false;
+      });
+      return;
+    }
+
+    setState(() {
+      isLoadingTherapist = true;
+      errorMessage = '';
+    });
+
+    try {
+      final therapistResult = await ApiService.getTherapistById(therapistId!);
+
+      if (therapistResult['success']) {
+        setState(() {
+          therapistData = therapistResult['therapist'];
+          isLoadingTherapist = false;
+        });
+
+        // Fetch slots for the selected date
+        _fetchAvailableSlots();
+      } else {
+        setState(() {
+          errorMessage = therapistResult['message'] ?? 'Failed to load therapist data';
+          isLoadingTherapist = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Error loading therapist data: $e';
+        isLoadingTherapist = false;
+      });
+    }
+  }
+
+  Future<void> _fetchAvailableSlots() async {
+    if (therapistId == null) {
+      setState(() {
+        availableSlots = [];
+        errorMessage = 'No therapist selected';
+        isLoadingSlots = false;
+      });
+      return;
+    }
+
+    setState(() {
+      isLoadingSlots = true;
+      errorMessage = '';
+    });
+
+    try {
+      final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+      final result = await ApiService.getAvailableSlots(
+        dateStr,
+        therapistId: therapistId,
+      );
+
+      if (result['success']) {
+        setState(() {
+          availableSlots = result['availableSlots'] ?? [];
+          isLoadingSlots = false;
+          selectedTimeSlot = null; // Reset selection when date changes
+        });
+      } else {
+        setState(() {
+          availableSlots = [];
+          errorMessage = result['message'] ?? 'Failed to load available slots';
+          isLoadingSlots = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        availableSlots = [];
+        errorMessage = 'Error loading slots: $e';
+        isLoadingSlots = false;
+      });
+    }
+  }
+
+  Future<void> _bookSession() async {
+    if (selectedTimeSlot == null) {
+      _showErrorDialog('Please select a time slot');
+      return;
+    }
+
+    if (therapistId == null) {
+      _showErrorDialog('No therapist selected');
+      return;
+    }
+
+    // Get the selected slot data to determine if it's free
+    final selectedSlotData = availableSlots.firstWhere(
+      (slot) => slot['slot'] == selectedTimeSlot,
+      orElse: () => null,
+    );
+
+    if (selectedSlotData == null) {
+      _showErrorDialog('Invalid time slot selected');
+      return;
+    }
+
+    final cost = selectedSlotData['cost'] ?? 0;
+    final isFree = selectedSlotData['isFree'] ?? false;
+
+    setState(() {
+      isBooking = true;
+    });
+
+    try {
+      final dateStr = DateFormat('yyyy-MM-dd').format(selectedDate);
+
+      // If the session is free, book directly without payment
+      if (isFree) {
+        final bookingResult = await ApiService.bookSession(
+          date: dateStr,
+          timeSlot: selectedTimeSlot!,
+          sessionType: 'Individual',
+          therapistId: therapistId,
+        );
+
+        setState(() {
+          isBooking = false;
+        });
+
+        if (bookingResult['success']) {
+          _showBookingConfirmation();
+        } else {
+          _showErrorDialog(bookingResult['message'] ?? 'Failed to book session');
+        }
+        return;
+      }
+
+      // For paid sessions: Get patient profile for payment
+      final profileResult = await ApiService.getProfile();
+      if (!profileResult['success']) {
+        setState(() {
+          isBooking = false;
+        });
+        _showErrorDialog('Unable to retrieve profile information');
+        return;
+      }
+
+      final profileData = profileResult['profile'];
+      final firstName = profileData['firstName'] ?? '';
+      final lastName = profileData['lastName'] ?? '';
+      final email = profileData['email'] ?? '';
+      final phone = profileData['phone'] ?? '';
+
+      if (email.isEmpty || phone.isEmpty) {
+        setState(() {
+          isBooking = false;
+        });
+        _showErrorDialog('Please update your profile with email and phone number');
+        return;
+      }
+
+      setState(() {
+        isBooking = false;
+      });
+
+      // Navigate to payment review page
+      Navigator.pushNamed(
+        context,
+        '/payment_review',
+        arguments: {
+          'bookingDetails': {
+            'date': dateStr,
+            'timeSlot': selectedTimeSlot!,
+            'therapistId': therapistId,
+            'sessionType': 'Individual',
+          },
+          'amount': (cost is num) ? cost.toDouble() : double.parse(cost.toString()),
+          'firstName': firstName,
+          'lastName': lastName,
+          'email': email,
+          'phone': phone,
+          'therapistName': therapistData?['name'] ?? 'Therapist',
+        },
+      );
+
+    } catch (e) {
+      setState(() {
+        isBooking = false;
+      });
+      _showErrorDialog('Error processing booking: $e');
+    }
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Column(
+            children: [
+              Icon(Icons.error_outline, color: Colors.red, size: 48),
+              SizedBox(height: 16),
+              Text(
+                'Booking Error',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  letterSpacing: 0.5,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          content: Text(
+            message,
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              letterSpacing: 0.5,
+              fontSize: 16,
+              color: Colors.grey[700],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text('OK'),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showPaymentErrorDialog(String error) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Column(
+            children: [
+              Icon(Icons.payment, color: Colors.red, size: 48),
+              SizedBox(height: 16),
+              Text(
+                'Payment Failed',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  letterSpacing: 0.5,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          content: Text(
+            'Your payment could not be processed. Error: $error\n\nNo session has been booked. Please try again.',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              letterSpacing: 0.5,
+              fontSize: 16,
+              color: Colors.grey[700],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryPurple,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text('Try Again'),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showPaymentDismissedDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Column(
+            children: [
+              Icon(Icons.info_outline, color: Colors.orange, size: 48),
+              SizedBox(height: 16),
+              Text(
+                'Payment Cancelled',
+                style: TextStyle(
+                  fontFamily: 'Poppins',
+                  letterSpacing: 0.5,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+          content: Text(
+            'You have cancelled the payment. No session has been booked.\n\nPlease try again when you are ready to complete the payment.',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              letterSpacing: 0.5,
+              fontSize: 16,
+              color: Colors.grey[700],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  Navigator.pushReplacementNamed(context, '/appointments');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryPurple,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text('View Appointments'),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +431,7 @@ class _BookSessionOnePageState extends State<BookSessionOnePage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           children: const [
-            SizedBox(height: 24), // Gap between screen top and appbar
+            SizedBox(height: 24),
             TherapyAppBar(),
           ],
         ),
@@ -47,7 +439,7 @@ class _BookSessionOnePageState extends State<BookSessionOnePage> {
       bottomNavigationBar: MobileNavBar(
         currentIndex: 3,
         onTap: (index) {
-          if (index == 3) return; // Already on this page
+          if (index == 3) return;
           if (index == 0) {
             Navigator.pushReplacementNamed(context, '/dashboard');
           } else if (index == 1) {
@@ -55,450 +447,461 @@ class _BookSessionOnePageState extends State<BookSessionOnePage> {
           } else if (index == 2) {
             Navigator.pushReplacementNamed(context, '/task_dashboard');
           }
-          // Add navigation for other indices if needed
         },
       ),
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Your Therapist',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    letterSpacing: 1.0,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
-                  ),
-                ),
-
-                SizedBox(height: 12),
-
-                // Therapist Card
-                Container(
-                  padding: EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: primaryPurple.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
+      body: isLoadingTherapist
+          ? Center(child: CircularProgressIndicator())
+          : errorMessage.isNotEmpty && therapistData == null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Therapist Photo
-                      Container(
-                        width: 50,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(25),
-                          image: DecorationImage(
-                            image: AssetImage('assets/images/logowhite.png'),
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(25),
-                            color: Colors.brown.withOpacity(0.8),
-                          ),
+                      Icon(Icons.error_outline, size: 64, color: Colors.red),
+                      SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                        child: Text(
+                          errorMessage,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 16),
                         ),
                       ),
-                      SizedBox(width: 12),
-                      // Therapist Info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  'Dr. Evelyn Reed',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    letterSpacing: 0.5,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                                Spacer(),
-                                Icon(
-                                  Icons.star,
-                                  color: Colors.orange,
-                                  size: 16,
-                                ),
-                                SizedBox(width: 2),
-                                Text(
-                                  '4.9',
-                                  style: TextStyle(
-                                    fontFamily: 'Poppins',
-                                    letterSpacing: 0.5,
-                                    fontSize: 14,
-                                    color: Colors.orange,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Cognitive Behavioral Therapy',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                letterSpacing: 0.5,
-                                fontSize: 14,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            SizedBox(height: 8),
-                            Text(
-                              'Rs.3000 per session',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                letterSpacing: 0.5,
-                                fontSize: 14,
-                                color: Colors.black,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
+                      SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pushReplacementNamed(
+                              context, '/choose_therapist');
+                        },
+                        child: Text('Select Therapist'),
                       ),
                     ],
                   ),
-                ),
-
-                SizedBox(height: 24),
-
-                // Select Date Section
-                Text(
-                  'Select Date',
-                  style: TextStyle(
-                    fontFamily: 'Poppins',
-                    letterSpacing: 0.5,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black,
-                  ),
-                ),
-
-                SizedBox(height: 12),
-
-                // Date Selection
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: dates.asMap().entries.map((entry) {
-                    int index = entry.key;
-                    Map<String, String> dateInfo = entry.value;
-                    bool isSelected = index == selectedDateIndex;
-
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedDateIndex = index;
-                          // Update selected date based on the clicked date
-                          selectedDate = DateTime(
-                            int.parse(dateInfo['year']!),
-                            _getMonthNumber(dateInfo['month']!),
-                            int.parse(dateInfo['date']!),
-                          );
-                        });
-                      },
-                      child: Container(
-                        width: 60,
-                        height: 70,
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? primaryPurple
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: isSelected
-                                ? primaryPurple
-                                : Colors.grey[300]!,
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              dateInfo['day']!,
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                letterSpacing: 0.5,
-                                fontSize: 12,
-                                color: isSelected
-                                    ? Colors.white
-                                    : Colors.grey[600],
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              dateInfo['date']!,
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                letterSpacing: 0.5,
-                                fontSize: 18,
-                                color: isSelected ? Colors.white : Colors.black,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-
-                SizedBox(height: 16),
-
-                // View Calendar
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    GestureDetector(
-                      onTap: () {
-                        // Handle calendar view
-                        setState(() {
-                          showCalendar = !showCalendar;
-                        });
-                      },
-                      child: Row(
+                )
+              : SafeArea(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'View Calendar',
+                            'Your Therapist',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              letterSpacing: 1.0,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            ),
+                          ),
+                          SizedBox(height: 12),
+
+                          // Therapist Card
+                          _buildTherapistCard(),
+
+                          SizedBox(height: 24),
+
+                          // Select Date Section
+                          Text(
+                            'Select Date',
                             style: TextStyle(
                               fontFamily: 'Poppins',
                               letterSpacing: 0.5,
-                              fontSize: 14,
-                              color: primaryPurple,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
                             ),
                           ),
-                          SizedBox(width: 4),
-                          Icon(
-                            showCalendar
-                                ? Icons.keyboard_arrow_up
-                                : Icons.keyboard_arrow_down,
-                            color: primaryPurple,
-                            size: 20,
+                          SizedBox(height: 12),
+
+                          // Date Selection
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Row(
+                              children: dates.asMap().entries.map((entry) {
+                                int index = entry.key;
+                                DateTime date = entry.value;
+                                bool isSelected = index == selectedDateIndex;
+
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      selectedDateIndex = index;
+                                      selectedDate = date;
+                                    });
+                                    _fetchAvailableSlots();
+                                  },
+                                  child: Container(
+                                    width: 60,
+                                    height: 70,
+                                    margin: EdgeInsets.only(right: 8),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? primaryPurple
+                                          : Colors.transparent,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? primaryPurple
+                                            : Colors.grey[300]!,
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Text(
+                                          DateFormat('EEE').format(date),
+                                          style: TextStyle(
+                                            fontFamily: 'Poppins',
+                                            letterSpacing: 0.5,
+                                            fontSize: 12,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : Colors.grey[600],
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        SizedBox(height: 4),
+                                        Text(
+                                          DateFormat('d').format(date),
+                                          style: TextStyle(
+                                            fontFamily: 'Poppins',
+                                            letterSpacing: 0.5,
+                                            fontSize: 18,
+                                            color: isSelected
+                                                ? Colors.white
+                                                : Colors.black,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
                           ),
+
+                          SizedBox(height: 24),
+
+                          // Available Time Slots
+                          Text(
+                            'Available Time Slots ${DateFormat('MMM d').format(selectedDate)}',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              letterSpacing: 0.5,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.black,
+                            ),
+                          ),
+                          SizedBox(height: 16),
+
+                          // Time Slots Grid
+                          isLoadingSlots
+                              ? Center(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(32.0),
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                )
+                              : availableSlots.isEmpty
+                                  ? Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(32.0),
+                                        child: Column(
+                                          children: [
+                                            Icon(Icons.event_busy,
+                                                size: 48, color: Colors.grey),
+                                            SizedBox(height: 16),
+                                            Text(
+                                              'No available slots for this date',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                color: Colors.grey[600],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    )
+                                  : GridView.count(
+                                      crossAxisCount: 2,
+                                      childAspectRatio: 3,
+                                      crossAxisSpacing: 12,
+                                      mainAxisSpacing: 12,
+                                      shrinkWrap: true,
+                                      physics: NeverScrollableScrollPhysics(),
+                                      children: availableSlots.map((slotData) {
+                                        final slot = slotData['slot'];
+                                        final isAvailable =
+                                            slotData['isAvailable'] ?? false;
+                                        final isFree = slotData['isFree'] ?? false;
+                                        final cost = slotData['cost'] ?? 0;
+                                        final isSelected = slot == selectedTimeSlot;
+
+                                        return GestureDetector(
+                                          onTap: isAvailable
+                                              ? () {
+                                                  setState(() {
+                                                    selectedTimeSlot = slot;
+                                                  });
+                                                }
+                                              : null,
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              color: !isAvailable
+                                                  ? Colors.grey[200]
+                                                  : isSelected
+                                                      ? primaryPurple
+                                                      : Colors.transparent,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              border: Border.all(
+                                                color: !isAvailable
+                                                    ? Colors.grey[400]!
+                                                    : isSelected
+                                                        ? primaryPurple
+                                                        : Colors.grey[300]!,
+                                                width: 1,
+                                              ),
+                                            ),
+                                            child: Center(
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Text(
+                                                    slot,
+                                                    style: TextStyle(
+                                                      fontSize: 13,
+                                                      fontFamily: 'Poppins',
+                                                      letterSpacing: 0.5,
+                                                      color: !isAvailable
+                                                          ? Colors.grey[600]
+                                                          : isSelected
+                                                              ? Colors.white
+                                                              : Colors.black,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  if (isAvailable)
+                                                    Text(
+                                                      isFree
+                                                          ? 'FREE'
+                                                          : 'Rs.$cost',
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        fontFamily: 'Poppins',
+                                                        color: isFree
+                                                            ? (isSelected
+                                                                ? Colors.white
+                                                                : Colors.green)
+                                                            : (isSelected
+                                                                ? Colors.white70
+                                                                : Colors
+                                                                    .grey[600]),
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                    ),
+                                                  if (!isAvailable)
+                                                    Text(
+                                                      'Booked',
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        fontFamily: 'Poppins',
+                                                        color: Colors.grey[600],
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      }).toList(),
+                                    ),
+
+                          SizedBox(height: 24),
+
+                          // Booking Summary
+                          _buildBookingSummary(),
+
+                          SizedBox(height: 20),
                         ],
+                      ),
+                    ),
+                  ),
+                ),
+    );
+  }
+
+  Widget _buildTherapistCard() {
+    final therapistName = therapistData?['name'] ?? 'Therapist';
+    final therapistImage = therapistData?['image'];
+    final therapistRating = therapistData?['rating'] ?? 0.0;
+    final sessionRate = therapistData?['session_rate'] ?? 0;
+
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: primaryPurple.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            backgroundImage: therapistImage != null && therapistImage.isNotEmpty
+                ? NetworkImage(therapistImage)
+                : AssetImage('assets/images/logowhite.png') as ImageProvider,
+            radius: 25,
+          ),
+          SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Dr. $therapistName',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        letterSpacing: 0.5,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black,
+                      ),
+                    ),
+                    Spacer(),
+                    Icon(Icons.star, color: Colors.orange, size: 16),
+                    SizedBox(width: 2),
+                    Text(
+                      therapistRating.toStringAsFixed(1),
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        letterSpacing: 0.5,
+                        fontSize: 14,
+                        color: Colors.orange,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
                 ),
-
-                SizedBox(height: 24),
-
-                // Calendar View (conditional)
-                if (showCalendar) ...[
-                  Container(
-                    padding: EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[50],
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey[300]!, width: 1),
-                    ),
-                    child: Column(
-                      children: [
-                        // Calendar Header
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              '${_getMonthName(selectedDate.month)} ${selectedDate.year}',
-                              style: TextStyle(
-                                fontFamily: 'Poppins',
-                                letterSpacing: 0.5,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black,
-                              ),
-                            ),
-                            Row(
-                              children: [
-                                IconButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      selectedDate = DateTime(
-                                        selectedDate.year,
-                                        selectedDate.month - 1,
-                                        1,
-                                      );
-                                    });
-                                  },
-                                  icon: Icon(
-                                    Icons.chevron_left,
-                                    color: primaryPurple,
-                                  ),
-                                  iconSize: 20,
-                                ),
-                                IconButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      selectedDate = DateTime(
-                                        selectedDate.year,
-                                        selectedDate.month + 1,
-                                        1,
-                                      );
-                                    });
-                                  },
-                                  icon: Icon(
-                                    Icons.chevron_right,
-                                    color: primaryPurple,
-                                  ),
-                                  iconSize: 20,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 16),
-                        // Calendar Grid
-                        _buildCalendarGrid(),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 24),
-                ],
-
-                // Available Time Slots
+                SizedBox(height: 4),
                 Text(
-                  'Available Time Slots ${_getMonthName(selectedDate.month)} ${selectedDate.day}',
+                  'Cognitive Behavioral Therapy',
                   style: TextStyle(
-                    fontFamily: 'Inter',
+                    fontFamily: 'Poppins',
                     letterSpacing: 0.5,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black,
+                    fontSize: 14,
+                    color: Colors.grey[600],
                   ),
                 ),
-
-                SizedBox(height: 16),
-
-                // Time Slots Grid
-                GridView.count(
-                  crossAxisCount: 2,
-                  childAspectRatio: 3,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  children: timeSlots.map((timeSlot) {
-                    bool isSelected = timeSlot == selectedTimeSlot;
-
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedTimeSlot = timeSlot;
-                        });
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isSelected
-                              ? primaryPurple
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: isSelected
-                                ? primaryPurple
-                                : Colors.grey[300]!,
-                            width: 1,
-                          ),
-                        ),
-                        child: Center(
-                          child: Text(
-                            timeSlot,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontFamily: 'Poppins',
-                              letterSpacing: 0.5,
-                              color: isSelected ? Colors.white : Colors.black,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-
-                SizedBox(height: 24),
-
-                // Booking Summary
+                SizedBox(height: 8),
                 Text(
-                  'Booking Summary',
+                  'Rs.$sessionRate per session',
                   style: TextStyle(
-                    fontFamily: 'Inter',
+                    fontFamily: 'Poppins',
                     letterSpacing: 0.5,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
                     color: Colors.black,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-                SizedBox(height: 12),
+  Widget _buildBookingSummary() {
+    final therapistName = therapistData?['name'] ?? 'Therapist';
+    final selectedSlotData = availableSlots.firstWhere(
+      (slot) => slot['slot'] == selectedTimeSlot,
+      orElse: () => null,
+    );
+    final cost = selectedSlotData?['cost'] ?? 0;
+    final isFree = selectedSlotData?['isFree'] ?? false;
 
-                // Session Details Card
-                Container(
-                  padding: EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Session Details',
-                        style: TextStyle(
-                          fontFamily: 'Poppins',
-                          letterSpacing: 0.5,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black,
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      _buildDetailRow(
-                        'Date:',
-                        '${_getDayName(selectedDate.weekday)} ${selectedDate.day}',
-                      ),
-                      SizedBox(height: 8),
-                      _buildDetailRow('Time:', selectedTimeSlot),
-                      SizedBox(height: 8),
-                      _buildDetailRow('Therapist:', 'Dr. Evelyn Reed'),
-                      SizedBox(height: 16),
-                      _buildDetailRow('Total Cost:', 'Rs.3000', isPrice: true),
-                    ],
-                  ),
+    return Container(
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Booking Summary',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              letterSpacing: 0.5,
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
+            ),
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Session Details',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              letterSpacing: 0.5,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black,
+            ),
+          ),
+          SizedBox(height: 16),
+          _buildDetailRow(
+            'Date:',
+            '${DateFormat('EEE').format(selectedDate)} ${selectedDate.day}',
+          ),
+          SizedBox(height: 8),
+          _buildDetailRow('Time:', selectedTimeSlot ?? '--'),
+          SizedBox(height: 8),
+          _buildDetailRow('Therapist:', 'Dr. $therapistName'),
+          SizedBox(height: 16),
+          _buildDetailRow(
+            'Total Cost:',
+            selectedTimeSlot == null
+                ? '--'
+                : (isFree ? 'FREE' : 'Rs.$cost'),
+            isPrice: true,
+            isFree: isFree,
+          ),
+          SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: (selectedTimeSlot != null && !isBooking)
+                  ? _bookSession
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryPurple,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
-
-                SizedBox(height: 24),
-
-                // Confirm Booking Button
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      _showBookingConfirmation();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryPurple,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                elevation: 0,
+              ),
+              child: isBooking
+                  ? SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
-                      elevation: 0,
-                    ),
-                    child: Text(
+                    )
+                  : Text(
                       'Confirm Booking',
                       style: TextStyle(
                         fontFamily: 'Poppins',
@@ -507,30 +910,29 @@ class _BookSessionOnePageState extends State<BookSessionOnePage> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                ),
-
-                SizedBox(height: 20),
-              ],
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildDetailRow(String label, String value, {bool isPrice = false}) {
+  Widget _buildDetailRow(String label, String value,
+      {bool isPrice = false, bool isFree = false}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
+        Text(label,
+            style: TextStyle(fontSize: 14, color: Colors.grey[600])),
         Text(
           value,
           style: TextStyle(
             fontFamily: 'Poppins',
             letterSpacing: 0.5,
             fontSize: 14,
-            color: isPrice ? primaryPurple : Colors.black,
+            color: isPrice
+                ? (isFree ? Colors.green : primaryPurple)
+                : Colors.black,
             fontWeight: isPrice ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
@@ -541,6 +943,7 @@ class _BookSessionOnePageState extends State<BookSessionOnePage> {
   void _showBookingConfirmation() {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(
@@ -564,9 +967,13 @@ class _BookSessionOnePageState extends State<BookSessionOnePage> {
             ],
           ),
           content: Text(
-            'Your session with Dr. Evelyn Reed has been booked for ${_getDayName(selectedDate.weekday)}, ${_getMonthName(selectedDate.month)} ${selectedDate.day} at $selectedTimeSlot.',
-            style: TextStyle(fontFamily: 'Poppins',
-                letterSpacing: 0.5,fontSize: 16, color: Colors.grey[700]),
+            'Your session with Dr. ${therapistData?['name'] ?? 'your therapist'} has been booked for ${DateFormat('EEEE, MMMM d').format(selectedDate)} at $selectedTimeSlot.',
+            style: TextStyle(
+              fontFamily: 'Poppins',
+              letterSpacing: 0.5,
+              fontSize: 16,
+              color: Colors.grey[700],
+            ),
             textAlign: TextAlign.center,
           ),
           actions: [
@@ -575,6 +982,7 @@ class _BookSessionOnePageState extends State<BookSessionOnePage> {
               child: ElevatedButton(
                 onPressed: () {
                   Navigator.of(context).pop();
+                  Navigator.pushReplacementNamed(context, '/appointments');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryPurple,
@@ -583,145 +991,12 @@ class _BookSessionOnePageState extends State<BookSessionOnePage> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: Text('Done'),
+                child: Text('View Appointments'),
               ),
             ),
           ],
         );
       },
-    );
-  }
-
-  // Helper methods for date formatting and calendar
-  String _getMonthName(int month) {
-    const months = [
-      '',
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return months[month];
-  }
-
-  int _getMonthNumber(String month) {
-    const months = {
-      'Jan': 1,
-      'Feb': 2,
-      'Mar': 3,
-      'Apr': 4,
-      'May': 5,
-      'Jun': 6,
-      'Jul': 7,
-      'Aug': 8,
-      'Sep': 9,
-      'Oct': 10,
-      'Nov': 11,
-      'Dec': 12,
-    };
-    return months[month] ?? 1;
-  }
-
-  String _getDayName(int weekday) {
-    const days = ['', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return days[weekday];
-  }
-
-  Widget _buildCalendarGrid() {
-    final firstDayOfMonth = DateTime(selectedDate.year, selectedDate.month, 1);
-    final lastDayOfMonth = DateTime(
-      selectedDate.year,
-      selectedDate.month + 1,
-      0,
-    );
-    final daysInMonth = lastDayOfMonth.day;
-    final startingWeekday = firstDayOfMonth.weekday;
-
-    List<Widget> dayWidgets = [];
-
-    // Add day headers
-    const dayHeaders = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    for (String day in dayHeaders) {
-      dayWidgets.add(
-        Container(
-          height: 30,
-          child: Center(
-            child: Text(
-              day,
-              style: TextStyle(
-                fontFamily: 'Poppins',
-                letterSpacing: 0.5,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[600],
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    // Add empty cells for days before the first day of the month
-    for (int i = 1; i < startingWeekday; i++) {
-      dayWidgets.add(Container());
-    }
-
-    // Add days of the month
-    for (int day = 1; day <= daysInMonth; day++) {
-      final isSelected = selectedDate.day == day;
-      final currentDate = DateTime(selectedDate.year, selectedDate.month, day);
-
-      dayWidgets.add(
-        GestureDetector(
-          onTap: () {
-            setState(() {
-              selectedDate = currentDate;
-              // Update the selectedDateIndex if it matches one of the predefined dates
-              for (int i = 0; i < dates.length; i++) {
-                if (dates[i]['date'] == day.toString()) {
-                  selectedDateIndex = i;
-                  break;
-                }
-              }
-            });
-          },
-          child: Container(
-            height: 35,
-            decoration: BoxDecoration(
-              color: isSelected ? primaryPurple : Colors.transparent,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Center(
-              child: Text(
-                day.toString(),
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  letterSpacing: 0.5,
-                  fontSize: 14,
-                  color: isSelected ? Colors.white : Colors.black,
-                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return GridView.count(
-      crossAxisCount: 7,
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      childAspectRatio: 1,
-      children: dayWidgets,
     );
   }
 }
