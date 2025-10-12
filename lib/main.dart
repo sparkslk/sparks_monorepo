@@ -13,22 +13,31 @@ import 'screens/therapy/therapist_profile_screen.dart';
 import 'screens/welcome/choose.dart';
 import 'screens/therapy/confirm_therapist.dart';
 import 'screens/therapy/book_session_one.dart';
+import 'screens/therapy/payment_review_screen.dart';
+import 'screens/therapy/payment_confirmation_screen.dart';
 import 'screens/appointment/appointment.dart';
 import 'screens/appointment/reschedule.dart';
 import 'screens/appointment/join_session.dart';
 import 'screens/appointment/past_summary.dart';
+import 'screens/appointment/cancel_appointment_screen.dart';
+import 'screens/appointment/cancel_confirmation_screen.dart';
 import 'screens/task/dashboard.dart';
 import 'screens/task/add_task.dart';
 import 'screens/task/pomodoro_timer.dart';
 import 'screens/task/completed_task.dart';
 import 'screens/task/day_tasks.dart';
 import 'widgets/not-found.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Load environment variables
   await dotenv.load(fileName: ".env");
+  // Initialize notifications & schedule daily check (non-blocking)
+  NotificationService.I.init().then(
+    (_) => NotificationService.I.scheduleDailyIncompleteTasksCheck(),
+  );
   runApp(SparksApp());
 }
 
@@ -54,6 +63,8 @@ class SparksApp extends StatelessWidget {
         '/choose': (context) => ChooseScreen(),
         '/confirm_therapist': (context) => ConfirmTherapistPage(),
         '/book_session_one': (context) => BookSessionOnePage(),
+        '/payment_review': (context) => PaymentReviewScreen(),
+        '/payment_confirmation': (context) => PaymentConfirmationScreen(),
         '/appointments': (context) => AppointmentPage(),
         '/task_dashboard': (context) => TaskDashboardPage(),
         '/add_task': (context) => NewTasksPage(),
@@ -72,6 +83,8 @@ class SparksApp extends StatelessWidget {
           return SessionSummaryPage(appointment: appointment);
         },
         '/reschedule': (context) => RescheduleSessionPage(),
+        '/cancel_appointment': (context) => CancelAppointmentScreen(),
+        '/cancel_confirmation': (context) => CancelConfirmationScreen(),
         '/join_session': (context) {
           final appointment =
               ModalRoute.of(context)!.settings.arguments
