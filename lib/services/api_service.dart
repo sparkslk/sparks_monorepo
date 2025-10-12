@@ -127,7 +127,7 @@ class ApiService {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        return {'success': true, 'profile': data};
+        return {'success': true, 'profile': data['profile']};
       } else {
         return {
           'success': false,
@@ -318,6 +318,442 @@ class ApiService {
       }
 
       return {'success': false, 'message': errorMessage};
+    }
+  }
+
+  // Get therapists list with optional filters
+  static Future<Map<String, dynamic>> getTherapists({
+    String? specialty,
+    String? minRating,
+    String? maxCost,
+    String? availability,
+    String? search,
+  }) async {
+    try {
+      final token = await _storage.read(key: 'jwt_token');
+      final queryParams = <String, String>{};
+      if (specialty != null) queryParams['specialty'] = specialty;
+      if (minRating != null) queryParams['minRating'] = minRating;
+      if (maxCost != null) queryParams['maxCost'] = maxCost;
+      if (availability != null) queryParams['availability'] = availability;
+      if (search != null) queryParams['search'] = search;
+
+      final uri = Uri.parse('$baseUrl/api/mobile/therapists')
+          .replace(queryParameters: queryParams);
+
+      final response = await http.get(
+        uri,
+        headers: {
+          ..._headers,
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'therapists': data['therapists'] ?? [],
+          'currentTherapist': data['currentTherapist'],
+          'hasTherapist': data['hasTherapist'] ?? false,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch therapists',
+        };
+      }
+    } catch (e) {
+      print('Get therapists error: $e');
+      return {'success': false, 'message': 'Failed to fetch therapists: $e'};
+    }
+  }
+
+  // Get specific therapist by ID
+  static Future<Map<String, dynamic>> getTherapistById(
+      String therapistId) async {
+    try {
+      final response = await authenticatedRequest(
+        'GET',
+        '/api/mobile/therapists/$therapistId',
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'therapist': data['therapist'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch therapist details',
+        };
+      }
+    } catch (e) {
+      print('Get therapist by ID error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to fetch therapist details: $e'
+      };
+    }
+  }
+
+  // Assign therapist to patient
+  static Future<Map<String, dynamic>> assignTherapist(
+      String therapistId) async {
+    try {
+      final response = await authenticatedRequest(
+        'POST',
+        '/api/mobile/therapists/assign',
+        body: {'therapistId': therapistId},
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'assigned': data['assigned'] ?? false,
+          'message': data['message'] ?? 'Therapist assigned successfully',
+          'therapist': data['therapist'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to assign therapist',
+        };
+      }
+    } catch (e) {
+      print('Assign therapist error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to assign therapist: $e'
+      };
+    }
+  }
+
+  // Get available slots for a specific date
+  static Future<Map<String, dynamic>> getAvailableSlots(
+    String date, {
+    String? therapistId,
+  }) async {
+    try {
+      final token = await _storage.read(key: 'jwt_token');
+      final queryParams = {'date': date};
+      if (therapistId != null) {
+        queryParams['therapistId'] = therapistId;
+      }
+
+      final uri = Uri.parse('$baseUrl/api/mobile/sessions/available-slots')
+          .replace(queryParameters: queryParams);
+
+      final response = await http.get(
+        uri,
+        headers: {
+          ..._headers,
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'availableSlots': data['availableSlots'] ?? [],
+          'therapistName': data['therapistName'],
+          'therapistId': data['therapistId'],
+          'date': data['date'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch available slots',
+        };
+      }
+    } catch (e) {
+      print('Get available slots error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to fetch available slots: $e'
+      };
+    }
+  }
+
+  // Book a therapy session
+  static Future<Map<String, dynamic>> bookSession({
+    required String date,
+    required String timeSlot,
+    String sessionType = "Individual",
+    String? therapistId,
+  }) async {
+    try {
+      final requestBody = {
+        'date': date,
+        'timeSlot': timeSlot,
+        'sessionType': sessionType,
+      };
+
+      if (therapistId != null) {
+        requestBody['therapistId'] = therapistId;
+      }
+
+      final response = await authenticatedRequest(
+        'POST',
+        '/api/mobile/sessions/book',
+        body: requestBody,
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Session booked successfully',
+          'session': data['session'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to book session',
+        };
+      }
+    } catch (e) {
+      print('Book session error: $e');
+      return {'success': false, 'message': 'Failed to book session: $e'};
+    }
+  }
+
+  // Get patient's therapy sessions
+  static Future<Map<String, dynamic>> getSessions({
+    String? timeframe, // 'upcoming', 'past', or 'all'
+    String? status,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      final token = await _storage.read(key: 'jwt_token');
+      final queryParams = <String, String>{
+        'limit': limit.toString(),
+        'offset': offset.toString(),
+      };
+
+      if (timeframe != null) queryParams['timeframe'] = timeframe;
+      if (status != null) queryParams['status'] = status;
+
+      final uri = Uri.parse('$baseUrl/api/mobile/sessions')
+          .replace(queryParameters: queryParams);
+
+      final response = await http.get(
+        uri,
+        headers: {
+          ..._headers,
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'sessions': data['sessions'] ?? [],
+          'total': data['total'] ?? 0,
+          'hasMore': data['hasMore'] ?? false,
+          'statistics': data['statistics'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch sessions',
+        };
+      }
+    } catch (e) {
+      print('Get sessions error: $e');
+      return {'success': false, 'message': 'Failed to fetch sessions: $e'};
+    }
+  }
+
+  // Get reschedule fee for a session
+  static Future<Map<String, dynamic>> getRescheduleFee(String sessionId) async {
+    try {
+      final token = await _storage.read(key: 'jwt_token');
+      final uri = Uri.parse('$baseUrl/api/mobile/sessions/reschedule/fee')
+          .replace(queryParameters: {'sessionId': sessionId});
+
+      final response = await http.get(
+        uri,
+        headers: {
+          ..._headers,
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'fee': data['fee'],
+          'requiresPayment': data['requiresPayment'],
+          'daysUntilSession': data['daysUntilSession'],
+          'currentSessionDate': data['currentSessionDate'],
+          'message': data['message'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to get reschedule fee',
+        };
+      }
+    } catch (e) {
+      print('Get reschedule fee error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to get reschedule fee: $e'
+      };
+    }
+  }
+
+  // Initiate reschedule fee payment
+  static Future<Map<String, dynamic>> initiateRescheduleFeePayment({
+    required String sessionId,
+    required double amount,
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String phone,
+    String? address,
+    String? city,
+  }) async {
+    try {
+      final response = await authenticatedRequest(
+        'POST',
+        '/api/mobile/payment/reschedule-fee',
+        body: {
+          'sessionId': sessionId,
+          'amount': amount,
+          'firstName': firstName,
+          'lastName': lastName,
+          'email': email,
+          'phone': phone,
+          if (address != null) 'address': address,
+          if (city != null) 'city': city,
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'paymentDetails': data,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to initiate reschedule fee payment',
+        };
+      }
+    } catch (e) {
+      print('Initiate reschedule fee payment error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to initiate reschedule fee payment: $e'
+      };
+    }
+  }
+
+  // Reschedule a therapy session
+  static Future<Map<String, dynamic>> rescheduleSession({
+    required String sessionId,
+    required String newDate,
+    required String newTimeSlot,
+    String? rescheduleReason,
+    String? paymentId,
+  }) async {
+    try {
+      final response = await authenticatedRequest(
+        'POST',
+        '/api/mobile/sessions/reschedule',
+        body: {
+          'sessionId': sessionId,
+          'newDate': newDate,
+          'newTimeSlot': newTimeSlot,
+          if (rescheduleReason != null) 'rescheduleReason': rescheduleReason,
+          if (paymentId != null) 'paymentId': paymentId,
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Session rescheduled successfully',
+          'session': data['session'],
+        };
+      } else if (response.statusCode == 402) {
+        // Payment Required
+        return {
+          'success': false,
+          'requiresPayment': true,
+          'fee': data['fee'],
+          'message': data['message'] ?? 'Payment required for rescheduling',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to reschedule session',
+        };
+      }
+    } catch (e) {
+      print('Reschedule session error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to reschedule session: $e'
+      };
+    }
+  }
+
+  // Cancel a therapy session
+  static Future<Map<String, dynamic>> cancelSession({
+    required String sessionId,
+    String? cancellationReason,
+  }) async {
+    try {
+      final response = await authenticatedRequest(
+        'POST',
+        '/api/mobile/sessions/cancel',
+        body: {
+          'sessionId': sessionId,
+          if (cancellationReason != null) 'cancellationReason': cancellationReason,
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Session cancelled successfully',
+          'cancellation': data['cancellation'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to cancel session',
+        };
+      }
+    } catch (e) {
+      print('Cancel session error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to cancel session: $e'
+      };
     }
   }
 }
