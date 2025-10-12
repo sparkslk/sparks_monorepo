@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/navbar.dart';
 import '../../services/api_service.dart';
 import 'dart:convert';
+import '../../services/notification_service.dart';
 
 class NewTasksPage extends StatefulWidget {
   @override
@@ -487,6 +488,22 @@ class _NewTasksPageState extends State<NewTasksPage>
             backgroundColor: primaryColor,
           ),
         );
+        if (isAlertEnabled) {
+          final taskTitle = title;
+          final taskBody = description.isNotEmpty
+              ? description
+              : 'New task created';
+          // schedule after 15s
+          NotificationService.I.scheduleAfterSeconds(
+            seconds: 15,
+            title: taskTitle,
+            body: taskBody,
+            kind: 'scheduled_15s',
+            extra: {'source': 'task_create'},
+          );
+        }
+        // Refresh daily incomplete schedule with newest task set (fire and forget)
+        NotificationService.I.scheduleDailyIncompleteTasksCheck();
         Navigator.pop(context); // Go back to previous screen
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

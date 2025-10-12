@@ -3,6 +3,7 @@ import '../../widgets/navbar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../services/api_service.dart';
+import '../../services/notification_service.dart';
 
 class TaskDashboardPage extends StatefulWidget {
   const TaskDashboardPage({Key? key}) : super(key: key);
@@ -88,6 +89,8 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
             }
           }
         }
+        // update daily incomplete schedule using latest tasks (non-blocking)
+        NotificationService.I.scheduleDailyIncompleteTasksCheck();
       } else {
         _taskError = data['error'] ?? 'Failed to load tasks.';
       }
@@ -99,12 +102,7 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
     });
   }
 
-  Map<DateTime, List<Map<String, dynamic>>> _completedTasks = {};
-  bool _isLoading = true;
-  String? _error;
-  List<Map<String, dynamic>> _getTasksForDay(DateTime day) {
-    return _completedTasks[DateTime(day.year, day.month, day.day)] ?? [];
-  }
+  // Removed unused calendar-related state from earlier iterations.
 
   @override
   void dispose() {
@@ -167,10 +165,14 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: const Color(0xFFE9ECEF), width: 1),
               ),
-              child: const Icon(
-                Icons.notifications_outlined,
-                color: Color(0xFF6B7280),
-                size: 20,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: _openNotificationHistory,
+                child: const Icon(
+                  Icons.notifications_outlined,
+                  color: Color(0xFF6B7280),
+                  size: 20,
+                ),
               ),
             ),
           ),
@@ -695,5 +697,241 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
     } catch (_) {
       return dueDate;
     }
+  }
+
+  Future<void> _openNotificationHistory() async {
+    final history = await NotificationService.I.fetchHistory();
+    if (!mounted) return;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) {
+        return _NotificationHistorySheet(
+          entries: history,
+          onCleared: () async {
+            await NotificationService.I.clearHistory();
+            if (mounted) Navigator.pop(ctx); // close sheet
+          },
+        );
+      },
+    ).then((_) => setState(() {}));
+  }
+}
+
+class _NotificationHistorySheet extends StatefulWidget {
+  final List<Map<String, dynamic>> entries; // already reversed chronologically
+  final VoidCallback onCleared;
+  const _NotificationHistorySheet({
+    required this.entries,
+    required this.onCleared,
+  });
+
+  @override
+  State<_NotificationHistorySheet> createState() =>
+      _NotificationHistorySheetState();
+}
+
+class _NotificationHistorySheetState extends State<_NotificationHistorySheet> {
+  late List<Map<String, dynamic>> _entries;
+  @override
+  void initState() {
+    super.initState();
+    _entries = widget.entries;
+  }
+
+  IconData _iconFor(String kind) {
+    switch (kind) {
+      case 'scheduled_15s':
+        return Icons.schedule;
+      case 'immediate_fallback':
+        return Icons.flash_on;
+      case 'daily_incomplete':
+        return Icons.error_outline;
+      default:
+        return Icons.notifications_active_outlined;
+    }
+  }
+
+  Color _colorFor(String kind) {
+    switch (kind) {
+      case 'scheduled_15s':
+        return const Color(0xFF2563EB);
+      case 'immediate_fallback':
+        return const Color(0xFFF59E0B);
+      case 'daily_incomplete':
+        return const Color(0xFFEF4444);
+      default:
+        return const Color(0xFF8159A8);
+    }
+  }
+
+  String _formatTime(String iso) {
+    try {
+      final dt = DateTime.parse(iso).toLocal();
+      return '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+    } catch (_) {
+      return iso;
+    }
+  }
+
+  void _replay(Map<String, dynamic> entry) async {
+    await NotificationService.I.replay(entry);
+    final refreshed = await NotificationService.I.fetchHistory();
+    if (mounted)
+      setState(() {
+        _entries = refreshed;
+      });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade300,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Notifications',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+                if (_entries.isNotEmpty)
+                  TextButton(
+                    onPressed: () async {
+                      final confirm = await showDialog<bool>(
+                        context: context,
+                        builder: (dCtx) => AlertDialog(
+                          title: const Text('Clear All?'),
+                          content: const Text(
+                            'Remove all notification history?',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(dCtx, false),
+                              child: const Text('Cancel'),
+                            ),
+                            ElevatedButton(
+                              onPressed: () => Navigator.pop(dCtx, true),
+                              child: const Text('Clear'),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirm == true) {
+                        await NotificationService.I.clearHistory();
+                        if (mounted)
+                          setState(() {
+                            _entries = [];
+                          });
+                      }
+                    },
+                    child: const Text('Clear All'),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            if (_entries.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 40),
+                child: Column(
+                  children: const [
+                    Icon(
+                      Icons.notifications_off_outlined,
+                      size: 48,
+                      color: Colors.grey,
+                    ),
+                    SizedBox(height: 12),
+                    Text(
+                      'No notifications yet',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Flexible(
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _entries.length,
+                  itemBuilder: (ctx, i) {
+                    final e = _entries[i];
+                    final title = e['title']?.toString() ?? 'Untitled';
+                    final body = e['body']?.toString() ?? '';
+                    final kind = e['kind']?.toString() ?? 'instant';
+                    final createdAt = e['createdAt']?.toString();
+                    return ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: _colorFor(kind).withOpacity(0.15),
+                        child: Icon(
+                          _iconFor(kind),
+                          color: _colorFor(kind),
+                          size: 18,
+                        ),
+                      ),
+                      title: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Text(
+                        body,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      trailing: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (createdAt != null)
+                            Text(
+                              _formatTime(createdAt),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _colorFor(kind).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              kind.replaceAll('_', ' '),
+                              style: TextStyle(
+                                fontSize: 9,
+                                color: _colorFor(kind),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      onTap: () => _replay(e),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }
