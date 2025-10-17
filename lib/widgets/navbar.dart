@@ -41,12 +41,7 @@ class MobileNavBar extends StatelessWidget {
                   children: [
                     _buildNavItem(Icons.home, 'Home', 0, context),
                     _buildNavItem(Icons.calendar_today, 'Tasks', 1, context),
-                    _buildNavItem(
-                      Icons.lightbulb_outline,
-                      'Sparks',
-                      2,
-                      context,
-                    ),
+                    _buildNavItem(Icons.lightbulb_outline, 'Keep', 2, context),
                     _buildNavItem(Icons.people_outline, 'Sessions', 3, context),
                   ],
                 ),
@@ -83,7 +78,7 @@ class MobileNavBar extends StatelessWidget {
             Navigator.pushReplacementNamed(context, '/appointments');
             break;
           case 2:
-            Navigator.pushReplacementNamed(context, '/choose_therapist');
+            Navigator.pushReplacementNamed(context, '/task_dashboard');
             break;
           case 3:
             Navigator.pushReplacementNamed(context, '/appointments');

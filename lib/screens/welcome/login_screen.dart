@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:dio/dio.dart';
-import 'package:cookie_jar/cookie_jar.dart';
-import 'package:dio_cookie_manager/dio_cookie_manager.dart';
-import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/api_service.dart';
 import '../../services/google_signin_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -13,8 +10,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  late Dio _dio;
-  late CookieJar _cookieJar;
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -34,20 +29,18 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _dio = Dio();
-    _cookieJar = CookieJar();
-    _dio.interceptors.add(CookieManager(_cookieJar));
     _checkExistingSession();
   }
 
   void _checkExistingSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('auth_token');
-    final userRole = prefs.getString('user_role');
-
-    if (token != null && userRole != null) {
-      // User is already logged in, redirect to appropriate screen
-      _redirectBasedOnRole(userRole);
+    final isLoggedIn = await ApiService.isLoggedIn();
+    if (isLoggedIn) {
+      final user = await ApiService.getCurrentUser();
+      // Only redirect if user data exists and has a valid id/email
+      if (user != null && (user['id'] != null || user['email'] != null)) {
+        final role = user['role'] ?? 'patient';
+        _redirectBasedOnRole(role);
+      }
     }
   }
 
@@ -67,7 +60,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // Updated login method with CSRF token handling
   void _login() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -76,195 +68,27 @@ class _LoginScreenState extends State<LoginScreen> {
       errorMsg = null;
     });
 
-    try {
-      // Step 1: Get CSRF token first
-      final csrfToken = await _getCSRFToken();
-      if (csrfToken == null) {
-        setState(() {
-          errorMsg = 'Failed to get security token. Please try again.';
-        });
-        return;
-      }
+    final result = await ApiService.login(
+      _emailController.text.trim(),
+      _passwordController.text,
+    );
 
-      // Step 2: Use the CSRF token for authentication
-      await _authenticateWithCSRF(csrfToken);
-    } catch (e) {
-      print('Login error: $e');
-      setState(() {
-        errorMsg = 'Network error. Please check your connection and try again.';
-      });
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
+    setState(() {
+      isLoading = false;
+    });
 
-  // Get CSRF token from NextAuth
-  Future<String?> _getCSRFToken() async {
-    try {
-      final String baseUrl = dotenv.env['API_BASE_URL']!;
-      final resp = await _dio.get('$baseUrl/api/auth/csrf');
-      print('CSRF Response status: ${resp.statusCode}');
-      print('CSRF Response body: ${resp.data}');
-      if (resp.statusCode == 200 &&
-          resp.data != null &&
-          resp.data['csrfToken'] != null) {
-        return resp.data['csrfToken'];
-      }
-    } catch (e) {
-      print('CSRF token error: $e');
-    }
-    return null;
-  }
-
-  // Authenticate with CSRF token
-  Future<void> _authenticateWithCSRF(String csrfToken) async {
-    try {
-      final String baseUrl = dotenv.env['API_BASE_URL']!;
-      final resp = await _dio.post(
-        '$baseUrl/api/auth/callback/credentials',
-        options: Options(
-          contentType: Headers.formUrlEncodedContentType,
-          followRedirects: false,
-          validateStatus: (status) =>
-              status != null && status >= 200 && status < 400,
-        ),
-        data: {
-          'email': _emailController.text.trim(),
-          'password': _passwordController.text,
-          'csrfToken': csrfToken,
-          'callbackUrl': '/dashboard-redirect',
-          'json': 'true',
-        },
-      );
-      print('Auth Response status: ${resp.statusCode}');
-      print('Auth Response body: ${resp.data}');
-      print('Auth Response headers: ${resp.headers}');
-      if (resp.statusCode == 200) {
-        final data = resp.data;
-        if (data is Map &&
-            data['url'] != null &&
-            !data['url'].toString().contains('error')) {
-          await _handleSuccessfulLogin();
-        } else if (data is Map && data['error'] != null) {
-          setState(() {
-            errorMsg = 'Invalid credentials. Please try again.';
-          });
-        } else {
-          setState(() {
-            errorMsg = 'Login failed. Please try again.';
-          });
-        }
-      } else if (resp.statusCode == 302) {
-        final location = resp.headers['location']?.first;
-        if (location != null && location.contains('dashboard')) {
-          await _handleSuccessfulLogin();
-        } else {
-          setState(() {
-            errorMsg = 'Login failed. Please check your credentials.';
-          });
-        }
-      } else if (resp.statusCode == 401) {
-        setState(() {
-          errorMsg =
-              'Invalid email or password. Please check your credentials.';
-        });
-      } else {
-        setState(() {
-          errorMsg = 'Login failed (${resp.statusCode}). Please try again.';
-        });
-      }
-    } catch (e) {
-      print('Auth error: $e');
-      setState(() {
-        errorMsg = 'Network error. Please check your connection and try again.';
-      });
-    }
-  }
-
-  // Handle successful login
-  Future<void> _handleSuccessfulLogin([Map<String, dynamic>? data]) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // Store user data if provided
-    if (data != null && data['user'] != null) {
-      await prefs.setString('user_id', data['user']['id'] ?? '');
-      await prefs.setString('user_email', data['user']['email'] ?? '');
-      await prefs.setString('user_role', data['user']['role'] ?? 'patient');
-      String name = data['user']['name'] ?? '';
-      if (name.isEmpty) {
-        // Try to fetch name from profile endpoint if not present
-        try {
-          final String baseUrl = dotenv.env['API_BASE_URL']!;
-          final profileResp = await _dio.get('$baseUrl/api/user/profile');
-          if (profileResp.statusCode == 200 &&
-              profileResp.data != null &&
-              profileResp.data['name'] != null) {
-            name = profileResp.data['name'];
-          }
-        } catch (e) {
-          print('Profile fetch error: $e');
-        }
-      }
-      await prefs.setString('user_name', name);
+    if (result['success'] == true) {
+      final user = result['user'] ?? {};
+      final role = user['role'] ?? 'patient';
+      _redirectBasedOnRole(role);
     } else {
-      // Store basic user info
-      await prefs.setString('user_email', _emailController.text.trim());
-      await prefs.setString('user_role', 'patient'); // Default role
-      // Try to fetch name from profile endpoint
-      String name = '';
-      try {
-        final profileResp = await _dio.get(
-          'http://192.168.1.199:3000/api/user/profile',
-        );
-        if (profileResp.statusCode == 200 &&
-            profileResp.data != null &&
-            profileResp.data['name'] != null) {
-          name = profileResp.data['name'];
-        }
-      } catch (e) {
-        print('Profile fetch error: $e');
-      }
-      await prefs.setString('user_name', name);
+      setState(() {
+        errorMsg = result['message'] ?? 'Login failed. Please try again.';
+      });
     }
-
-    if (data != null && data['sessionToken'] != null) {
-      await prefs.setString('auth_token', data['sessionToken']);
-    }
-
-    await prefs.setBool('is_logged_in', true);
-
-    // Navigate to appropriate screen
-    final userRole = data?['user']?['role'] ?? 'patient';
-    _redirectBasedOnRole(userRole);
   }
 
-  // Helper method to handle successful redirect
-  Future<void> _handleSuccessfulRedirect(String location) async {
-    final prefs = await SharedPreferences.getInstance();
-
-    // Extract user info from redirect URL if available
-    final uri = Uri.parse(location);
-    final queryParams = uri.queryParameters;
-
-    if (queryParams.containsKey('user')) {
-      // Handle user data from query parameters if your backend provides it
-      await prefs.setString('user_email', _emailController.text.trim());
-    }
-
-    // Determine role from redirect URL
-    String role = 'patient';
-    if (location.contains('admin')) {
-      role = 'admin';
-    } else if (location.contains('doctor')) {
-      role = 'doctor';
-    }
-
-    await prefs.setString('user_role', role);
-    await prefs.setBool('is_logged_in', true);
-    _redirectBasedOnRole(role);
-  }
+  // ...existing code...
 
   void _googleSignIn() async {
     setState(() {

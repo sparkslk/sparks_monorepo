@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../widgets/navbar.dart';
 import '../../widgets/therapy_appbar.dart';
+import '../../services/api_service.dart';
 
 class TherapistProfileScreen extends StatefulWidget {
   const TherapistProfileScreen({Key? key}) : super(key: key);
@@ -18,6 +19,12 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
 
   PageController _reviewPageController = PageController();
   int _currentReviewPage = 0;
+
+  // Therapist data
+  Map<String, dynamic>? therapistData;
+  bool isLoading = true;
+  bool isAssigningTherapist = false;
+  String errorMessage = '';
 
   @override
   void initState() {
@@ -45,6 +52,58 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Fetch therapist data when dependencies are ready
+    if (therapistData == null && !isLoading) return;
+    if (therapistData == null) {
+      _fetchTherapistData();
+    }
+  }
+
+  String? _therapistId; // Store therapistId for later use
+
+  Future<void> _fetchTherapistData() async {
+    final therapistId = ModalRoute.of(context)?.settings.arguments as String?;
+
+    if (therapistId == null) {
+      setState(() {
+        isLoading = false;
+        errorMessage = 'No therapist ID provided';
+      });
+      return;
+    }
+
+    _therapistId = therapistId; // Save therapistId
+
+    setState(() {
+      isLoading = true;
+      errorMessage = '';
+    });
+
+    try {
+      final result = await ApiService.getTherapistById(therapistId);
+
+      if (result['success']) {
+        setState(() {
+          therapistData = result['therapist'];
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          errorMessage = result['message'] ?? 'Failed to load therapist details';
+          isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Error loading therapist: $e';
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _fadeController.dispose();
     _slideController.dispose();
@@ -54,9 +113,6 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
 
   @override
   Widget build(BuildContext context) {
-    const avatarUrl =
-        'https://media.istockphoto.com/id/660150716/photo/young-businessman-with-beard-smiling-towards-camera.jpg?s=612x612&w=0&k=20&c=bmOLrjsgfJziLXsfquG87i_tvjD4GsPj41HAvzRcflQ=';
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7FC),
       bottomNavigationBar: MobileNavBar(
@@ -68,56 +124,88 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
           } else if (index == 1) {
             Navigator.pushReplacementNamed(context, '/appointments');
           } else if (index == 2) {
-            Navigator.pushReplacementNamed(context, '/dashboard');
+            Navigator.pushReplacementNamed(context, '/task_dashboard');
           }
         },
       ),
       body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SlideTransition(
-            position: _slideAnimation,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const TherapyAppBar(),
-                  const SizedBox(height: 24),
+        child: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : errorMessage.isNotEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                        const SizedBox(height: 16),
+                        Text(
+                          errorMessage,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 16),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: _fetchTherapistData,
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  )
+                : FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: SlideTransition(
+                      position: _slideAnimation,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const TherapyAppBar(),
+                            const SizedBox(height: 24),
 
-                  // Enhanced Profile Card
-                  _buildProfileCard(avatarUrl),
-                  const SizedBox(height: 28),
+                            // Enhanced Profile Card
+                            _buildProfileCard(),
+                            const SizedBox(height: 28),
 
-                  // About Section
-                  _buildAboutSection(),
-                  const SizedBox(height: 28),
+                            // About Section
+                            _buildAboutSection(),
+                            const SizedBox(height: 28),
 
-                  // Specializations Section
-                  _buildSpecializationsSection(),
-                  const SizedBox(height: 28),
+                            // Specializations Section
+                            _buildSpecializationsSection(),
+                            const SizedBox(height: 28),
 
-                  // Availability Section
-                  _buildAvailabilitySection(),
-                  const SizedBox(height: 28),
+                            // Reviews Section
+                            _buildReviewsSection(),
+                            const SizedBox(height: 32),
 
-                  // Reviews Section
-                  _buildReviewsSection(),
-                  const SizedBox(height: 32),
-
-                  // Action Buttons
-                  _buildActionButtons(),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          ),
-        ),
+                            // Action Buttons
+                            _buildActionButtons(),
+                            const SizedBox(height: 20),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
       ),
     );
   }
 
-  Widget _buildProfileCard(String avatarUrl) {
+  Widget _buildProfileCard() {
+    final name = therapistData?['name'] ?? 'Therapist';
+    final avatarUrl = therapistData?['image'];
+    final rating = (therapistData?['rating'] ?? 0.0).toDouble();
+    final patientCount = therapistData?['patientCount'] ?? 0;
+    final experience = therapistData?['experience'] ?? 0;
+
+    // Get first specialization as main specialty
+    String mainSpecialty = 'General Therapist';
+    if (therapistData?['specialization'] != null) {
+      if (therapistData?['specialization'] is List && (therapistData?['specialization'] as List).isNotEmpty) {
+        mainSpecialty = (therapistData?['specialization'] as List).first.toString();
+      }
+    }
+
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -155,12 +243,27 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(14),
-                  child: Image.network(
-                    avatarUrl,
-                    width: 80,
-                    height: 80,
-                    fit: BoxFit.cover,
-                  ),
+                  child: avatarUrl != null && avatarUrl.isNotEmpty
+                      ? Image.network(
+                          avatarUrl,
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 80,
+                              height: 80,
+                              color: const Color(0xFFF0E6FF),
+                              child: const Icon(Icons.person, size: 40, color: Color(0xff8159a8)),
+                            );
+                          },
+                        )
+                      : Container(
+                          width: 80,
+                          height: 80,
+                          color: const Color(0xFFF0E6FF),
+                          child: const Icon(Icons.person, size: 40, color: Color(0xff8159a8)),
+                        ),
                 ),
               ),
               const SizedBox(width: 20),
@@ -168,26 +271,19 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        const Expanded(
-                          child: Text(
-                            'Dr. Kamal Perera',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontWeight: FontWeight.w700,
-                              fontSize: 20,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-
-                      ],
+                    Text(
+                      name,
+                      style: const TextStyle(
+                        fontFamily: 'Poppins',
+                        fontWeight: FontWeight.w700,
+                        fontSize: 20,
+                        color: Colors.black,
+                      ),
                     ),
                     const SizedBox(height: 4),
-                    const Text(
-                      'General Practitioner',
-                      style: TextStyle(
+                    Text(
+                      mainSpecialty,
+                      style: const TextStyle(
                         fontFamily: 'Poppins',
                         letterSpacing: 0.5,
                         fontSize: 15,
@@ -198,15 +294,18 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
+                        Icon(Icons.email, size: 16, color: Colors.grey.shade600),
                         const SizedBox(width: 4),
-                        Text(
-                          'Colombo, Sri Lanka',
-                          style: TextStyle(
-                            fontFamily: 'Poppins',
-                            letterSpacing: 0.5,
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
+                        Expanded(
+                          child: Text(
+                            therapistData?['email'] ?? '',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              letterSpacing: 0.5,
+                              fontSize: 14,
+                              color: Colors.grey.shade600,
+                            ),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       ],
@@ -218,13 +317,21 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
           ),
           const SizedBox(height: 24),
           // Enhanced Stats Row
-          const _ProfileStatsRow(),
+          _ProfileStatsRow(
+            rating: rating,
+            patientCount: patientCount,
+            experience: experience,
+          ),
         ],
       ),
     );
   }
 
   Widget _buildAboutSection() {
+    final name = therapistData?['name'] ?? 'Therapist';
+    final firstName = name.split(' ').first;
+    final bio = therapistData?['bio'] ?? 'No biography available.';
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -245,9 +352,9 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
             children: [
               Icon(Icons.person, color: const Color(0xff8159a8), size: 20),
               const SizedBox(width: 8),
-              const Text(
-                'About Dr. Kamal',
-                style: TextStyle(
+              Text(
+                'About $firstName',
+                style: const TextStyle(
                   fontFamily: 'Poppins',
                   letterSpacing: 0.5,
                   fontWeight: FontWeight.bold,
@@ -258,9 +365,9 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Dr. Kamal Perera is a dedicated General Practitioner known for his compassionate patient care and clinical expertise. With years of experience in diagnosing and treating a wide range of health conditions, he emphasizes preventive care and holistic wellness. Dr. Perera is trusted for his approachable nature and commitment to community health.',
-            style: TextStyle(
+          Text(
+            bio,
+            style: const TextStyle(
               fontFamily: 'Poppins',
               letterSpacing: 0.5,
               fontSize: 15,
@@ -274,13 +381,32 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
   }
 
   Widget _buildSpecializationsSection() {
-    final specializations = [
-      {'name': 'Anxiety Disorders', 'icon': Icons.psychology},
-      {'name': 'Depression', 'icon': Icons.mood_bad},
-      {'name': 'Trauma Therapy', 'icon': Icons.healing},
-      {'name': 'Cognitive Behavioral Therapy', 'icon': Icons.mic},
-      {'name': 'Family Counseling', 'icon': Icons.family_restroom},
-    ];
+    List<String> specializations = [];
+
+    if (therapistData?['specialization'] != null) {
+      if (therapistData?['specialization'] is List) {
+        specializations = (therapistData?['specialization'] as List)
+            .map((e) => e.toString())
+            .toList();
+      }
+    }
+
+    if (specializations.isEmpty) {
+      specializations = ['General Therapy'];
+    }
+
+    // Icon mapping for common specializations
+    IconData getIconForSpecialization(String spec) {
+      final lowerSpec = spec.toLowerCase();
+      if (lowerSpec.contains('anxiety')) return Icons.psychology;
+      if (lowerSpec.contains('depression')) return Icons.mood_bad;
+      if (lowerSpec.contains('trauma')) return Icons.healing;
+      if (lowerSpec.contains('cognitive') || lowerSpec.contains('cbt')) return Icons.mic;
+      if (lowerSpec.contains('family') || lowerSpec.contains('couples')) return Icons.family_restroom;
+      if (lowerSpec.contains('child')) return Icons.child_care;
+      if (lowerSpec.contains('addiction')) return Icons.local_hospital;
+      return Icons.psychology_alt; // Default icon
+    }
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -329,11 +455,10 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(spec['icon'] as IconData, size: 16, color: const Color(0xff8159a8)),
+                    Icon(getIconForSpecialization(spec), size: 16, color: const Color(0xff8159a8)),
                     const SizedBox(width: 6),
                     Text(
-
-                      spec['name'] as String,
+                      spec,
                       style: const TextStyle(
                         fontFamily: 'Poppins',
                         letterSpacing: 0.5,
@@ -572,21 +697,139 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
               elevation: 0,
               shadowColor: Colors.transparent,
             ),
-            onPressed: () {
-              Navigator.pushReplacementNamed(context, '/confirm_therapist');
-            },
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.calendar_month, size: 20),
-                const SizedBox(width: 8),
-                const Text(
-                  'Book Appointment',
-                  style: TextStyle( fontFamily: 'Poppins',
-                      letterSpacing: 0.5,fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ],
-            ),
+            onPressed: isAssigningTherapist
+                ? null
+                : () async {
+                    // Assign therapist first, then navigate to booking screen
+                    if (_therapistId != null) {
+                      setState(() {
+                        isAssigningTherapist = true;
+                      });
+
+                      try {
+                        final result =
+                            await ApiService.assignTherapist(_therapistId!);
+
+                        setState(() {
+                          isAssigningTherapist = false;
+                        });
+
+                        if (result['success']) {
+                          // Show success message if this is a new assignment
+                          if (result['assigned'] == true) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(result['message'] ??
+                                    'Therapist assigned successfully'),
+                                backgroundColor: const Color(0xff8159a8),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
+
+                          // Navigate to booking screen
+                          Navigator.pushNamed(
+                            context,
+                            '/book_session_one',
+                            arguments: _therapistId,
+                          );
+                        } else {
+                          // Show error dialog
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                title: Column(
+                                  children: [
+                                    Icon(Icons.error_outline,
+                                        color: Colors.red, size: 48),
+                                    SizedBox(height: 16),
+                                    Text(
+                                      'Assignment Failed',
+                                      style: TextStyle(
+                                        fontFamily: 'Poppins',
+                                        letterSpacing: 0.5,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                                content: Text(
+                                  result['message'] ??
+                                      'Failed to assign therapist',
+                                  style: TextStyle(
+                                    fontFamily: 'Poppins',
+                                    letterSpacing: 0.5,
+                                    fontSize: 16,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                                actions: [
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: ElevatedButton(
+                                      onPressed: () {
+                                        Navigator.of(context).pop();
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors.red,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      child: Text('OK'),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        }
+                      } catch (e) {
+                        setState(() {
+                          isAssigningTherapist = false;
+                        });
+                        // Show error
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
+            child: isAssigningTherapist
+                ? SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.calendar_month, size: 20),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Book Appointment',
+                        style: TextStyle(
+                            fontFamily: 'Poppins',
+                            letterSpacing: 0.5,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
           ),
         ),
         const SizedBox(height: 12),
@@ -624,17 +867,37 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
 }
 
 class _ProfileStatsRow extends StatelessWidget {
-  const _ProfileStatsRow();
+  final double rating;
+  final int patientCount;
+  final int experience;
+
+  const _ProfileStatsRow({
+    required this.rating,
+    required this.patientCount,
+    required this.experience,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _StatBox(icon: Icons.star, label: 'RATING', value: '4.5'),
+        _StatBox(
+          icon: Icons.star,
+          label: 'RATING',
+          value: rating.toStringAsFixed(1),
+        ),
         const SizedBox(width: 12),
-        _StatBox(icon: Icons.people, label: 'PATIENTS', value: '1000+'),
+        _StatBox(
+          icon: Icons.people,
+          label: 'PATIENTS',
+          value: patientCount > 0 ? '$patientCount' : '0',
+        ),
         const SizedBox(width: 12),
-        _StatBox(icon: Icons.school, label: 'EXPERIENCE', value: '10+ Years'),
+        _StatBox(
+          icon: Icons.school,
+          label: 'EXPERIENCE',
+          value: experience > 0 ? '$experience Years' : 'New',
+        ),
       ],
     );
   }

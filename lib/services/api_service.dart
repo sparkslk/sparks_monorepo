@@ -6,143 +6,264 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiService {
-  // Get base URL from environment variables
   static String get baseUrl =>
-      dotenv.env['API_BASE_URL'] ?? 'http://localhost:3000';
+      dotenv.env['API_BASE_URL'] ?? 'http://192.168.1.231:3000';
   static const FlutterSecureStorage _storage = FlutterSecureStorage();
 
-  // Headers for API requests
   static Map<String, String> get _headers => {
     'Content-Type': 'application/json',
   };
 
-  // Login with email and password
+  // Login with email and password (MOBILE API)
   static Future<Map<String, dynamic>> login(
-      String email,
-      String password,
-      ) async {
+    String email,
+    String password,
+  ) async {
     try {
-      print('🔍 Attempting login...');
-      print('📍 Base URL: $baseUrl');
-      print('📧 Email: $email');
+      final uri = Uri.parse('$baseUrl/api/auth/mobile/credentials');
+      final response = await http
+          .post(
+            uri,
+            headers: _headers,
+            body: jsonEncode({'email': email, 'password': password}),
+          )
+          .timeout(const Duration(seconds: 10));
 
-      final uri = Uri.parse('$baseUrl/api/auth/callback/credentials');
-      print('🌐 Full URL: $uri');
+      final data = jsonDecode(response.body);
 
-      // Properly URL-encode the body for x-www-form-urlencoded
-      final body = 'email=${Uri.encodeComponent(email)}&password=${Uri.encodeComponent(password)}&redirect=false';
-
-      final response = await http.post(
-        uri,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'Accept': 'application/json',
-        },
-        body: body,
-      ).timeout(const Duration(seconds: 10));
-
-      print('✅ Login response status: ${response.statusCode}');
-      print('📄 Login response body: ${response.body}');
-
-      if (response.statusCode == 200) {
-        if (response.body.isEmpty) {
-          return {'success': false, 'message': 'Empty response from server'};
-        }
-
-        final data = jsonDecode(response.body);
-
-        if (data['url'] == null && data['error'] == null) {
-          // Login successful
-          await _handleSuccessfulLogin(data);
-          return {
-            'success': true,
-            'message': 'Login successful',
-            'user': data['user'] ?? {},
-          };
-        } else {
-          // Login failed
-          return {
-            'success': false,
-            'message': data['error'] ?? 'Invalid email or password',
-          };
-        }
-      } else if (response.statusCode == 302) {
-        // Handle redirect manually
-        final location = response.headers['location'];
-        if (location != null) {
-          print('➡️ Following redirect to: $location');
-          final redirectUri = Uri.parse(location);
-          final redirectResponse = await http.get(redirectUri, headers: {
-            'Accept': 'application/json',
-          }).timeout(const Duration(seconds: 10));
-
-          print('🔁 Redirect response status: ${redirectResponse.statusCode}');
-          print('🔁 Redirect response body: ${redirectResponse.body}');
-
-          // Check if response is HTML (starts with <!DOCTYPE or <html)
-          if (redirectResponse.body.trim().startsWith('<!DOCTYPE') ||
-              redirectResponse.body.trim().startsWith('<html')) {
-            return {
-              'success': false,
-              'message': 'Login failed: Received an HTML page instead of user data. Please check your credentials or contact support.',
-            };
-          }
-
-          if (redirectResponse.statusCode == 200) {
-            if (redirectResponse.body.isEmpty) {
-              return {'success': false, 'message': 'Empty redirect response from server'};
-            }
-
-            final data = jsonDecode(redirectResponse.body);
-            await _handleSuccessfulLogin(data);
-            return {
-              'success': true,
-              'message': 'Login successful (redirected)',
-              'user': data['user'] ?? {},
-            };
-          } else {
-            return {
-              'success': false,
-              'message': 'Login redirect failed (${redirectResponse.statusCode}).',
-            };
-          }
-        } else {
-          return {
-            'success': false,
-            'message': 'Login failed: Redirect (302) received but no Location header found.',
-          };
-        }
-      } else {
-        print('❌ HTTP Error: ${response.statusCode}');
+      if (response.statusCode == 200 && data['accessToken'] != null) {
+        // Save JWT as 'jwt_token' for consistency
+        await _storage.write(
+          key: 'jwt_token',
+          value: data['accessToken'].toString(),
+        );
+        await _saveUser(data['user']);
         return {
-          'success': false,
-          'message': 'Server error (${response.statusCode}). Please try again.',
+          'success': true,
+          'token': data['accessToken'],
+          'user': data['user'],
         };
+      } else {
+        return {'success': false, 'message': data['error'] ?? 'Login failed'};
       }
     } catch (e) {
-      print('❌ Login error: $e');
-
-      String errorMessage = 'An error occurred. Please try again.';
-
-      if (e.toString().contains('Connection refused')) {
-        errorMessage =
-        'Cannot connect to server. Please check:\n'
-            '1. Backend server is running\n'
-            '2. Network connection\n'
-            '3. Server URL is correct ($baseUrl)';
-      } else if (e.toString().contains('TimeoutException')) {
-        errorMessage = 'Connection timeout. Please check your network.';
-      } else if (e.toString().contains('SocketException')) {
-        errorMessage = 'Network error. Please check your connection.';
-      } else if (e.toString().contains('FormatException')) {
-        errorMessage = 'Invalid response format from server.';
-      }
-
-      return {'success': false, 'message': errorMessage};
+      return {'success': false, 'message': 'Login error: $e'};
     }
   }
 
-  // Register new user
+  // Google Sign-In (MOBILE API)
+  static Future<Map<String, dynamic>> googleSignIn(String googleIdToken) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/mobile/auth/google');
+      final response = await http
+          .post(
+            uri,
+            headers: _headers,
+            body: jsonEncode({'idToken': googleIdToken}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['token'] != null) {
+        await _saveTokens(data, response);
+        await _saveUser(data['user']);
+        return {'success': true, 'token': data['token'], 'user': data['user']};
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Google sign-in failed',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Google sign-in error: $e'};
+    }
+  }
+
+  // Logout (MOBILE API)
+  static Future<Map<String, dynamic>> logout() async {
+    try {
+      final token = await _storage.read(key: 'jwt_token');
+      final uri = Uri.parse('$baseUrl/api/mobile/auth/logout');
+      final response = await http
+          .post(
+            uri,
+            headers: {
+              ..._headers,
+              if (token != null) 'Authorization': 'Bearer $token',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      await _clearLocalData();
+
+      if (response.statusCode == 200) {
+        return {'success': true};
+      } else {
+        final data = jsonDecode(response.body);
+        return {'success': false, 'message': data['error'] ?? 'Logout failed'};
+      }
+    } catch (e) {
+      await _clearLocalData();
+      return {'success': false, 'message': 'Logout error: $e'};
+    }
+  }
+
+  // Get Profile (MOBILE API)
+  static Future<Map<String, dynamic>> getProfile() async {
+    try {
+      final token = await _storage.read(key: 'jwt_token');
+      final uri = Uri.parse('$baseUrl/api/mobile/profile');
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              ..._headers,
+              if (token != null) 'Authorization': 'Bearer $token',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'profile': data['profile']};
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Profile fetch failed',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Profile fetch error: $e'};
+    }
+  }
+
+  // Save tokens (JWT/session) securely
+  static Future<void> _saveTokens(
+    Map<String, dynamic> data,
+    http.Response response,
+  ) async {
+    if (data['token'] != null) {
+      await _storage.write(key: 'jwt_token', value: data['token'].toString());
+    }
+    final setCookie = response.headers['set-cookie'];
+    if (setCookie != null) {
+      final sessionToken = _extractCookieValue(
+        setCookie,
+        'next-auth.session-token',
+      );
+      if (sessionToken != null) {
+        await _storage.write(key: 'session_token', value: sessionToken);
+      }
+    }
+  }
+
+  // Save user data
+  static Future<void> _saveUser(dynamic user) async {
+    if (user != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('user_data', jsonEncode(user));
+      await prefs.setBool('is_logged_in', true);
+    }
+  }
+
+  // Extract cookie value from set-cookie header
+  static String? _extractCookieValue(String cookieHeader, String name) {
+    final cookies = cookieHeader.split(';');
+    for (final cookie in cookies) {
+      final parts = cookie.trim().split('=');
+      if (parts.length == 2 && parts[0] == name) {
+        return parts[1];
+      }
+    }
+    return null;
+  }
+
+  // Clear all local data
+  static Future<void> _clearLocalData() async {
+    await _storage.delete(key: 'jwt_token');
+    await _storage.delete(key: 'session_token');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+  }
+
+  // Get current user data
+  static Future<Map<String, dynamic>?> getCurrentUser() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userData = prefs.getString('user_data');
+      if (userData != null && userData.isNotEmpty) {
+        return jsonDecode(userData);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Check if user is logged in
+  static Future<bool> isLoggedIn() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool('is_logged_in') ?? false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Generic authenticated request
+  static Future<http.Response> authenticatedRequest(
+    String method,
+    String endpoint, {
+    Map<String, dynamic>? body,
+    Map<String, String>? additionalHeaders,
+  }) async {
+    final token = await _storage.read(key: 'jwt_token');
+    final headers = {
+      ..._headers,
+      if (token != null) 'Authorization': 'Bearer $token',
+      ...?additionalHeaders,
+    };
+    final uri = Uri.parse('$baseUrl$endpoint');
+    switch (method.toUpperCase()) {
+      case 'GET':
+        return http
+            .get(uri, headers: headers)
+            .timeout(const Duration(seconds: 10));
+      case 'POST':
+        return http
+            .post(
+              uri,
+              headers: headers,
+              body: body != null ? jsonEncode(body) : null,
+            )
+            .timeout(const Duration(seconds: 10));
+      case 'PUT':
+        return http
+            .put(
+              uri,
+              headers: headers,
+              body: body != null ? jsonEncode(body) : null,
+            )
+            .timeout(const Duration(seconds: 10));
+      case 'PATCH':
+        return http
+            .patch(
+              uri,
+              headers: headers,
+              body: body != null ? jsonEncode(body) : null,
+            )
+            .timeout(const Duration(seconds: 10));
+      case 'DELETE':
+        return http
+            .delete(uri, headers: headers)
+            .timeout(const Duration(seconds: 10));
+      default:
+        throw ArgumentError('Unsupported HTTP method: $method');
+    }
+  }
+
   static Future<Map<String, dynamic>> signup({
     required String name,
     required String email,
@@ -151,17 +272,19 @@ class ApiService {
     Map<String, dynamic>? metadata,
   }) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/auth/signup'),
-        headers: _headers,
-        body: jsonEncode({
-          'name': name,
-          'email': email,
-          'password': password,
-          'role': role,
-          'metadata': metadata ?? {},
-        }),
-      ).timeout(const Duration(seconds: 10));
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/api/auth/signup'),
+            headers: _headers,
+            body: jsonEncode({
+              'name': name,
+              'email': email,
+              'password': password,
+              'role': role,
+              'metadata': metadata ?? {},
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
 
       print('Signup response status: ${response.statusCode}');
       print('Signup response body: ${response.body}');
@@ -194,201 +317,443 @@ class ApiService {
         errorMessage = 'Connection timeout. Please check your network.';
       }
 
-      return {
-        'success': false,
-        'message': errorMessage,
-      };
+      return {'success': false, 'message': errorMessage};
     }
   }
 
-  // Google Sign In
-  static Future<Map<String, dynamic>> googleSignIn() async {
+  // Get therapists list with optional filters
+  static Future<Map<String, dynamic>> getTherapists({
+    String? specialty,
+    String? minRating,
+    String? maxCost,
+    String? availability,
+    String? search,
+  }) async {
     try {
-      // For Google Sign In, you'll need to integrate with the google_sign_in package
-      // and then call your NextAuth Google provider endpoint
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/auth/signin/google'),
-        headers: _headers,
-      ).timeout(const Duration(seconds: 10));
+      final token = await _storage.read(key: 'jwt_token');
+      final queryParams = <String, String>{};
+      if (specialty != null) queryParams['specialty'] = specialty;
+      if (minRating != null) queryParams['minRating'] = minRating;
+      if (maxCost != null) queryParams['maxCost'] = maxCost;
+      if (availability != null) queryParams['availability'] = availability;
+      if (search != null) queryParams['search'] = search;
 
-      if (response.statusCode == 200) {
-        if (response.body.isEmpty) {
-          return {'success': false, 'message': 'Empty response from server'};
-        }
-
-        final data = jsonDecode(response.body);
-        await _handleSuccessfulLogin(data);
-        return {
-          'success': true,
-          'message': 'Google sign in successful',
-          'user': data['user'] ?? {},
-        };
-      } else {
-        return {'success': false, 'message': 'Google sign in failed'};
-      }
-    } catch (e) {
-      print('Google sign in error: $e');
-      return {
-        'success': false,
-        'message': 'An error occurred with Google sign in.',
-      };
-    }
-  }
-
-  // Handle successful login - store tokens and user data
-  static Future<void> _handleSuccessfulLogin(Map<String, dynamic> data) async {
-    try {
-      // Store session tokens securely
-      if (data['token'] != null) {
-        await _storage.write(key: 'session_token', value: data['token'].toString());
-      }
-
-      // Store user data in shared preferences
-      if (data['user'] != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_data', jsonEncode(data['user']));
-        await prefs.setBool('is_logged_in', true);
-      }
-    } catch (e) {
-      print('Error handling successful login: $e');
-      // Don't throw here, as login was successful
-    }
-  }
-
-  // Get current user data
-  static Future<Map<String, dynamic>?> getCurrentUser() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userData = prefs.getString('user_data');
-
-      if (userData != null && userData.isNotEmpty) {
-        return jsonDecode(userData);
-      }
-      return null;
-    } catch (e) {
-      print('Get current user error: $e');
-      return null;
-    }
-  }
-
-  // Check if user is logged in
-  static Future<bool> isLoggedIn() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      return prefs.getBool('is_logged_in') ?? false;
-    } catch (e) {
-      print('Check login status error: $e');
-      return false;
-    }
-  }
-
-  // Logout
-  static Future<Map<String, dynamic>> logout() async {
-    try {
-      // Call NextAuth signout endpoint
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/auth/signout'),
-        headers: _headers,
-      ).timeout(const Duration(seconds: 10));
-
-      // Clear local storage regardless of API response
-      await _clearLocalData();
-
-      if (response.statusCode == 200) {
-        return {'success': true, 'message': 'Logged out successfully'};
-      } else {
-        return {
-          'success': true, // Still return success since we cleared local data
-          'message': 'Logged out locally',
-        };
-      }
-    } catch (e) {
-      // Clear local data even if API call fails
-      await _clearLocalData();
-      print('Logout error: $e');
-      return {'success': true, 'message': 'Logged out locally'};
-    }
-  }
-
-  // Clear local user data
-  static Future<void> _clearLocalData() async {
-    try {
-      await _storage.delete(key: 'session_token');
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('user_data');
-      await prefs.setBool('is_logged_in', false);
-    } catch (e) {
-      print('Error clearing local data: $e');
-    }
-  }
-
-  // Get user profile
-  static Future<Map<String, dynamic>> getUserProfile() async {
-    try {
-      final token = await _storage.read(key: 'session_token');
+      final uri = Uri.parse('$baseUrl/api/mobile/therapists')
+          .replace(queryParameters: queryParams);
 
       final response = await http.get(
-        Uri.parse('$baseUrl/api/profile'),
+        uri,
         headers: {
           ..._headers,
           if (token != null) 'Authorization': 'Bearer $token',
         },
       ).timeout(const Duration(seconds: 10));
 
-      if (response.statusCode == 200) {
-        if (response.body.isEmpty) {
-          return {'success': false, 'message': 'Empty response from server'};
-        }
+      final data = jsonDecode(response.body);
 
-        final data = jsonDecode(response.body);
-        return {'success': true, 'data': data};
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'therapists': data['therapists'] ?? [],
+          'currentTherapist': data['currentTherapist'],
+          'hasTherapist': data['hasTherapist'] ?? false,
+        };
       } else {
-        return {'success': false, 'message': 'Failed to fetch profile'};
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch therapists',
+        };
       }
     } catch (e) {
-      print('Get profile error: $e');
+      print('Get therapists error: $e');
+      return {'success': false, 'message': 'Failed to fetch therapists: $e'};
+    }
+  }
+
+  // Get specific therapist by ID
+  static Future<Map<String, dynamic>> getTherapistById(
+      String therapistId) async {
+    try {
+      final response = await authenticatedRequest(
+        'GET',
+        '/api/mobile/therapists/$therapistId',
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'therapist': data['therapist'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch therapist details',
+        };
+      }
+    } catch (e) {
+      print('Get therapist by ID error: $e');
       return {
         'success': false,
-        'message': 'An error occurred while fetching profile.',
+        'message': 'Failed to fetch therapist details: $e'
       };
     }
   }
 
-  // Generic API call method with authentication
-  static Future<http.Response> authenticatedRequest(
-      String method,
-      String endpoint, {
-        Map<String, dynamic>? body,
-        Map<String, String>? additionalHeaders,
-      }) async {
-    final token = await _storage.read(key: 'session_token');
-    final headers = {
-      ..._headers,
-      if (token != null) 'Authorization': 'Bearer $token',
-      ...?additionalHeaders,
-    };
+  // Assign therapist to patient
+  static Future<Map<String, dynamic>> assignTherapist(
+      String therapistId) async {
+    try {
+      final response = await authenticatedRequest(
+        'POST',
+        '/api/mobile/therapists/assign',
+        body: {'therapistId': therapistId},
+      ).timeout(const Duration(seconds: 10));
 
-    final uri = Uri.parse('$baseUrl$endpoint');
+      final data = jsonDecode(response.body);
 
-    switch (method.toUpperCase()) {
-      case 'GET':
-        return http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
-      case 'POST':
-        return http.post(
-          uri,
-          headers: headers,
-          body: body != null ? jsonEncode(body) : null,
-        ).timeout(const Duration(seconds: 10));
-      case 'PUT':
-        return http.put(
-          uri,
-          headers: headers,
-          body: body != null ? jsonEncode(body) : null,
-        ).timeout(const Duration(seconds: 10));
-      case 'DELETE':
-        return http.delete(uri, headers: headers).timeout(const Duration(seconds: 10));
-      default:
-        throw ArgumentError('Unsupported HTTP method: $method');
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'assigned': data['assigned'] ?? false,
+          'message': data['message'] ?? 'Therapist assigned successfully',
+          'therapist': data['therapist'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to assign therapist',
+        };
+      }
+    } catch (e) {
+      print('Assign therapist error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to assign therapist: $e'
+      };
+    }
+  }
+
+  // Get available slots for a specific date
+  static Future<Map<String, dynamic>> getAvailableSlots(
+    String date, {
+    String? therapistId,
+  }) async {
+    try {
+      final token = await _storage.read(key: 'jwt_token');
+      final queryParams = {'date': date};
+      if (therapistId != null) {
+        queryParams['therapistId'] = therapistId;
+      }
+
+      final uri = Uri.parse('$baseUrl/api/mobile/sessions/available-slots')
+          .replace(queryParameters: queryParams);
+
+      final response = await http.get(
+        uri,
+        headers: {
+          ..._headers,
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'availableSlots': data['availableSlots'] ?? [],
+          'therapistName': data['therapistName'],
+          'therapistId': data['therapistId'],
+          'date': data['date'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch available slots',
+        };
+      }
+    } catch (e) {
+      print('Get available slots error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to fetch available slots: $e'
+      };
+    }
+  }
+
+  // Book a therapy session
+  static Future<Map<String, dynamic>> bookSession({
+    required String date,
+    required String timeSlot,
+    String sessionType = "Individual",
+    String? therapistId,
+  }) async {
+    try {
+      final requestBody = {
+        'date': date,
+        'timeSlot': timeSlot,
+        'sessionType': sessionType,
+      };
+
+      if (therapistId != null) {
+        requestBody['therapistId'] = therapistId;
+      }
+
+      final response = await authenticatedRequest(
+        'POST',
+        '/api/mobile/sessions/book',
+        body: requestBody,
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Session booked successfully',
+          'session': data['session'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to book session',
+        };
+      }
+    } catch (e) {
+      print('Book session error: $e');
+      return {'success': false, 'message': 'Failed to book session: $e'};
+    }
+  }
+
+  // Get patient's therapy sessions
+  static Future<Map<String, dynamic>> getSessions({
+    String? timeframe, // 'upcoming', 'past', or 'all'
+    String? status,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      final token = await _storage.read(key: 'jwt_token');
+      final queryParams = <String, String>{
+        'limit': limit.toString(),
+        'offset': offset.toString(),
+      };
+
+      if (timeframe != null) queryParams['timeframe'] = timeframe;
+      if (status != null) queryParams['status'] = status;
+
+      final uri = Uri.parse('$baseUrl/api/mobile/sessions')
+          .replace(queryParameters: queryParams);
+
+      final response = await http.get(
+        uri,
+        headers: {
+          ..._headers,
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'sessions': data['sessions'] ?? [],
+          'total': data['total'] ?? 0,
+          'hasMore': data['hasMore'] ?? false,
+          'statistics': data['statistics'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch sessions',
+        };
+      }
+    } catch (e) {
+      print('Get sessions error: $e');
+      return {'success': false, 'message': 'Failed to fetch sessions: $e'};
+    }
+  }
+
+  // Get reschedule fee for a session
+  static Future<Map<String, dynamic>> getRescheduleFee(String sessionId) async {
+    try {
+      final token = await _storage.read(key: 'jwt_token');
+      final uri = Uri.parse('$baseUrl/api/mobile/sessions/reschedule/fee')
+          .replace(queryParameters: {'sessionId': sessionId});
+
+      final response = await http.get(
+        uri,
+        headers: {
+          ..._headers,
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'fee': data['fee'],
+          'requiresPayment': data['requiresPayment'],
+          'daysUntilSession': data['daysUntilSession'],
+          'currentSessionDate': data['currentSessionDate'],
+          'message': data['message'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to get reschedule fee',
+        };
+      }
+    } catch (e) {
+      print('Get reschedule fee error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to get reschedule fee: $e'
+      };
+    }
+  }
+
+  // Initiate reschedule fee payment
+  static Future<Map<String, dynamic>> initiateRescheduleFeePayment({
+    required String sessionId,
+    required double amount,
+    required String firstName,
+    required String lastName,
+    required String email,
+    required String phone,
+    String? address,
+    String? city,
+  }) async {
+    try {
+      final response = await authenticatedRequest(
+        'POST',
+        '/api/mobile/payment/reschedule-fee',
+        body: {
+          'sessionId': sessionId,
+          'amount': amount,
+          'firstName': firstName,
+          'lastName': lastName,
+          'email': email,
+          'phone': phone,
+          if (address != null) 'address': address,
+          if (city != null) 'city': city,
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'paymentDetails': data,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to initiate reschedule fee payment',
+        };
+      }
+    } catch (e) {
+      print('Initiate reschedule fee payment error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to initiate reschedule fee payment: $e'
+      };
+    }
+  }
+
+  // Reschedule a therapy session
+  static Future<Map<String, dynamic>> rescheduleSession({
+    required String sessionId,
+    required String newDate,
+    required String newTimeSlot,
+    String? rescheduleReason,
+    String? paymentId,
+  }) async {
+    try {
+      final response = await authenticatedRequest(
+        'POST',
+        '/api/mobile/sessions/reschedule',
+        body: {
+          'sessionId': sessionId,
+          'newDate': newDate,
+          'newTimeSlot': newTimeSlot,
+          if (rescheduleReason != null) 'rescheduleReason': rescheduleReason,
+          if (paymentId != null) 'paymentId': paymentId,
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Session rescheduled successfully',
+          'session': data['session'],
+        };
+      } else if (response.statusCode == 402) {
+        // Payment Required
+        return {
+          'success': false,
+          'requiresPayment': true,
+          'fee': data['fee'],
+          'message': data['message'] ?? 'Payment required for rescheduling',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to reschedule session',
+        };
+      }
+    } catch (e) {
+      print('Reschedule session error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to reschedule session: $e'
+      };
+    }
+  }
+
+  // Cancel a therapy session
+  static Future<Map<String, dynamic>> cancelSession({
+    required String sessionId,
+    String? cancellationReason,
+  }) async {
+    try {
+      final response = await authenticatedRequest(
+        'POST',
+        '/api/mobile/sessions/cancel',
+        body: {
+          'sessionId': sessionId,
+          if (cancellationReason != null) 'cancellationReason': cancellationReason,
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Session cancelled successfully',
+          'cancellation': data['cancellation'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to cancel session',
+        };
+      }
+    } catch (e) {
+      print('Cancel session error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to cancel session: $e'
+      };
     }
   }
 }

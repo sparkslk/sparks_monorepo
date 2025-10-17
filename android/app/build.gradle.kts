@@ -13,6 +13,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+    // Required for some Flutter/third-party libs (e.g., flutter_local_notifications)
+    // that rely on newer Java APIs when minSdk < 26.
+    isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -41,4 +44,9 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Core library desugaring: allow use of newer java.time / util APIs on older Android devices.
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }

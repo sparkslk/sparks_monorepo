@@ -12,7 +12,7 @@ class ApiConfig {
   static String get baseUrl => isProduction ? productionUrl : developmentUrl;
 
   // API Endpoints
-  static const String loginEndpoint = '/api/auth/callback/credentials';
+  static const String loginEndpoint = '/api/auth/mobile/credentials';
   static const String signupEndpoint = '/api/auth/signup';
   static const String googleSignInEndpoint = '/api/auth/signin/google';
   static const String logoutEndpoint = '/api/auth/signout';
