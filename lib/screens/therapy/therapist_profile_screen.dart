@@ -1092,21 +1092,17 @@ class _ReviewCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Text(
-                review,
-                style: const TextStyle(
-                  fontFamily: 'Poppins',
-                  letterSpacing: 0.5,
-                  fontSize: 13,
-                  color: Colors.black87,
-                  height: 1.4,
-                ),
-                maxLines: 4,
-                overflow: TextOverflow.ellipsis,
-              ),
+          Text(
+            review,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              letterSpacing: 0.5,
+              fontSize: 13,
+              color: Colors.black87,
+              height: 1.4,
             ),
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),
