@@ -4,6 +4,7 @@ import '../../widgets/therapy_appbar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
 import 'dart:convert';
+import '../../services/notification_service.dart';
 
 class CompletedDayTasksPage extends StatefulWidget {
   final String taskId;
@@ -42,6 +43,7 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
   DateTime? _completedDateTime;
   String _taskNotes = '';
   final TextEditingController _notesController = TextEditingController();
+  bool _isAlertEnabled = false;
 
   @override
   void initState() {
@@ -80,6 +82,14 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
 
     _loadUserName();
     _fetchTaskDetails();
+    _loadAlertStatus();
+  }
+
+  Future<void> _loadAlertStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isAlertEnabled = prefs.getBool('task_alert_${widget.taskId}') ?? false;
+    });
   }
 
   Future<void> _fetchTaskDetails() async {
@@ -205,6 +215,12 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
           _originalStatus = _currentStatus;
           _originalNotes = _taskNotes;
         });
+
+        // Cancel notification if task is marked as completed
+        if (_currentStatus == 'COMPLETED') {
+          await NotificationService.I.cancelTaskReminder(widget.taskId);
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Task updated successfully!'),
@@ -468,6 +484,11 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
 
           // Notes Section with Edit Capability
           _buildNotesSection(),
+
+          const SizedBox(height: 20),
+
+          // Alert Section
+          _buildAlertSection(),
 
           const SizedBox(height: 28),
 
@@ -900,6 +921,97 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
     );
   }
 
+  Widget _buildAlertSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8F9FA),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE9ECEF), width: 1),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.notifications_outlined,
+            size: 20,
+            color: Color(0xFF8159A8),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Get Alert for this Task',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14,
+                    color: Color(0xFF1A1A1A),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Receive notification at 8PM on due date',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12,
+                    color: Color(0xFF6B7280),
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: _isAlertEnabled,
+            onChanged: (bool value) async {
+              setState(() {
+                _isAlertEnabled = value;
+              });
+
+              // Save alert setting to SharedPreferences
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('task_alert_${widget.taskId}', value);
+
+              // Schedule or cancel notification based on toggle
+              if (value && _taskDetails != null) {
+                final dueDate = _taskDetails!['dueDate'] != null
+                    ? DateTime.parse(_taskDetails!['dueDate'])
+                    : null;
+                if (dueDate != null) {
+                  await NotificationService.I.scheduleTaskReminder(
+                    taskId: widget.taskId,
+                    title: _taskDetails!['title'] ?? 'Task',
+                    dueDate: dueDate,
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Alert scheduled for 8PM on due date'),
+                      backgroundColor: Color(0xFF10B981),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                }
+              } else {
+                await NotificationService.I.cancelTaskReminder(widget.taskId);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Alert cancelled'),
+                    backgroundColor: Color(0xFF6B7280),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            activeColor: const Color(0xFF8159A8),
+            activeTrackColor: const Color(0xFF8159A8).withOpacity(0.3),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionButtons() {
     return Row(
       children: [
@@ -1032,7 +1144,14 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
                 ),
               ),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
+                  // Cancel notification before deleting task
+                  await NotificationService.I.cancelTaskReminder(widget.taskId);
+
+                  // Remove alert setting from SharedPreferences
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.remove('task_alert_${widget.taskId}');
+
                   Navigator.pop(context);
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
