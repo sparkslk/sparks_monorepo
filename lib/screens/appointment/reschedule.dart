@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:payhere_mobilesdk_flutter/payhere_mobilesdk_flutter.dart';
 import '../../widgets/navbar.dart';
+import '../../widgets/therapy_appbar.dart';
 import '../../services/api_service.dart';
 
 class RescheduleSessionPage extends StatefulWidget {
@@ -360,23 +361,9 @@ class _RescheduleSessionPageState extends State<RescheduleSessionPage> {
         },
       ),
       backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Reschedule Session',
-          style: TextStyle(
-            color: Colors.black87,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Poppins',
-          ),
-        ),
-        centerTitle: true,
+      appBar: const TherapyAppBar(
+        title: 'Reschedule Session',
+        showBackButton: true,
       ),
       body: isLoadingFee
           ? const Center(
