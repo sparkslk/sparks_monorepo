@@ -51,24 +51,27 @@ class PaymentService {
       print('  merchantId: ${paymentData['merchantId']}');
       print('  amount: ${paymentData['amount']}');
       print('  currency: ${paymentData['currency']}');
+      print('  hash: ${paymentData['hash']}');
       print('  notifyUrl: ${paymentData['notifyUrl']}');
 
       // Step 2: Configure PayHere SDK
+      // Note: merchant_secret is NOT sent to mobile for security
+      // Instead, we use the hash generated on the backend
       Map<String, dynamic> paymentObject = {
         "sandbox": true, // Set to false for production
-        "merchant_id": paymentData['merchantId'],
-        "merchant_secret": paymentData['merchantSecret'],
-        "notify_url": paymentData['notifyUrl'],
-        "order_id": orderId,
-        "items": paymentData['items'],
-        "amount": paymentData['amount'],
-        "currency": paymentData['currency'],
-        "first_name": paymentData['customerFirstName'],
-        "last_name": paymentData['customerLastName'],
-        "email": paymentData['customerEmail'],
-        "phone": paymentData['customerPhone'],
-        "address": paymentData['customerAddress'],
-        "city": paymentData['customerCity'],
+        "merchant_id": paymentData['merchantId'] ?? '',
+        "hash": paymentData['hash'] ?? '',
+        "notify_url": paymentData['notifyUrl'] ?? '',
+        "order_id": orderId ?? '',
+        "items": paymentData['items'] ?? 'Therapy Session',
+        "amount": paymentData['amount']?.toString() ?? '0.00',
+        "currency": paymentData['currency'] ?? 'LKR',
+        "first_name": paymentData['customerFirstName'] ?? firstName,
+        "last_name": paymentData['customerLastName'] ?? lastName,
+        "email": paymentData['customerEmail'] ?? email,
+        "phone": paymentData['customerPhone'] ?? phone,
+        "address": paymentData['customerAddress'] ?? (address ?? ''),
+        "city": paymentData['customerCity'] ?? (city ?? ''),
         "country": "Sri Lanka",
       };
 
