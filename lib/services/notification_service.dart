@@ -13,6 +13,7 @@ import 'api_service.dart'; // For fetching tasks to build daily incomplete remin
 /// instant: on-demand (e.g. replay)
 /// immediate_fallback: if exact scheduling not permitted
 /// daily_incomplete: daily incomplete tasks reminder
+/// task_8pm_reminder: task reminder scheduled for 8PM on due date
 class NotificationService {
   NotificationService._();
   static final NotificationService _instance = NotificationService._();
@@ -31,6 +32,7 @@ class NotificationService {
   bool _timezoneInited = false;
 
   static const _dailyIncompleteIdsKey = 'notification_daily_incomplete_ids';
+  static const _taskReminderIdsKey = 'notification_task_reminder_ids';
 
   Future<bool> init() async {
     if (_initialized) return true;
@@ -464,6 +466,8 @@ class NotificationService {
           if (decoded is List) list = decoded;
         } catch (_) {}
       }
+      // Add isRead flag to all new notifications
+      map['isRead'] = false;
       list.add(map);
       if (list.length > _maxHistory) {
         list = list.sublist(list.length - _maxHistory); // keep last
@@ -530,6 +534,218 @@ class NotificationService {
       await prefs.setString(_prefsKey, jsonEncode(pruned));
     } catch (e) {
       debugPrint('[NotificationService] pruneDailyIncompleteHistory error: $e');
+    }
+  }
+
+  /// Schedule a task reminder at 8PM on the due date.
+  /// If due date is in the past or today past 8PM, shows immediate notification.
+  Future<void> scheduleTaskReminder({
+    required String taskId,
+    required String title,
+    required DateTime dueDate,
+  }) async {
+    await init();
+    await _ensureTimezone();
+    try {
+      final enabled = await ensurePermission();
+      if (!enabled) {
+        debugPrint(
+          '[NotificationService] Notifications disabled for task reminder',
+        );
+        return;
+      }
+
+      // Cancel any existing reminder for this task
+      await cancelTaskReminder(taskId);
+
+      final now = tz.TZDateTime.now(tz.local);
+      // Schedule for 8PM (20:00) on the due date
+      tz.TZDateTime scheduledTime = tz.TZDateTime(
+        tz.local,
+        dueDate.year,
+        dueDate.month,
+        dueDate.day,
+        20, // 8PM
+        0,
+        0,
+      );
+
+      final id = _randomId();
+      final body = 'Task is not completed yet. Due today at 8PM.';
+
+      // Check if scheduled time is in the past
+      if (scheduledTime.isBefore(now)) {
+        // Show immediate notification
+        debugPrint(
+          '[NotificationService] Task $taskId due date is past, showing immediate notification',
+        );
+        await showInstant(
+          title: title,
+          body: 'Task is overdue!',
+          kind: 'task_8pm_reminder',
+          extra: {'taskId': taskId},
+        );
+        return;
+      }
+
+      // Schedule the notification
+      await _fln.zonedSchedule(
+        id,
+        title,
+        body,
+        scheduledTime,
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            _androidChannelId,
+            _androidChannelName,
+            channelDescription: _androidChannelDesc,
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: const DarwinNotificationDetails(),
+        ),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        payload: jsonEncode({
+          'kind': 'task_8pm_reminder',
+          'taskId': taskId,
+        }),
+      );
+
+      await _appendHistory({
+        'id': id,
+        'title': title,
+        'body': body,
+        'createdAt': DateTime.now().toIso8601String(),
+        'scheduledFor': scheduledTime.toIso8601String(),
+        'kind': 'task_8pm_reminder',
+        'taskId': taskId,
+      });
+
+      await _storeTaskReminderId(taskId, id);
+
+      debugPrint(
+        '[NotificationService] Scheduled task_8pm_reminder for task $taskId at $scheduledTime',
+      );
+    } catch (e) {
+      debugPrint('[NotificationService] scheduleTaskReminder error: $e');
+    }
+  }
+
+  /// Cancel a scheduled task reminder by taskId
+  Future<void> cancelTaskReminder(String taskId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_taskReminderIdsKey);
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw) as Map<String, dynamic>?;
+        if (decoded != null && decoded.containsKey(taskId)) {
+          final notificationId = decoded[taskId] as int?;
+          if (notificationId != null) {
+            await _fln.cancel(notificationId);
+            decoded.remove(taskId);
+            await prefs.setString(_taskReminderIdsKey, jsonEncode(decoded));
+            debugPrint(
+              '[NotificationService] Cancelled task reminder for task $taskId',
+            );
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[NotificationService] cancelTaskReminder error: $e');
+    }
+  }
+
+  /// Store the mapping of taskId to notification id
+  Future<void> _storeTaskReminderId(String taskId, int notificationId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_taskReminderIdsKey);
+      Map<String, dynamic> map = {};
+      if (raw != null && raw.isNotEmpty) {
+        try {
+          final decoded = jsonDecode(raw);
+          if (decoded is Map) map = Map<String, dynamic>.from(decoded);
+        } catch (_) {}
+      }
+      map[taskId] = notificationId;
+      await prefs.setString(_taskReminderIdsKey, jsonEncode(map));
+    } catch (e) {
+      debugPrint('[NotificationService] storeTaskReminderId error: $e');
+    }
+  }
+
+  /// Get all unread notifications
+  Future<List<Map<String, dynamic>>> getUnreadNotifications() async {
+    try {
+      final history = await fetchHistory();
+      return history.where((n) => n['isRead'] != true).toList();
+    } catch (e) {
+      debugPrint('[NotificationService] getUnreadNotifications error: $e');
+      return [];
+    }
+  }
+
+  /// Mark a specific notification as read by its id
+  Future<void> markAsRead(int notificationId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_prefsKey);
+      if (raw == null || raw.isEmpty) return;
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return;
+
+      bool updated = false;
+      for (final e in decoded) {
+        if (e is Map && e['id'] == notificationId) {
+          e['isRead'] = true;
+          updated = true;
+          break;
+        }
+      }
+
+      if (updated) {
+        await prefs.setString(_prefsKey, jsonEncode(decoded));
+        debugPrint(
+          '[NotificationService] Marked notification $notificationId as read',
+        );
+      }
+    } catch (e) {
+      debugPrint('[NotificationService] markAsRead error: $e');
+    }
+  }
+
+  /// Mark all notifications as read
+  Future<void> markAllAsRead() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_prefsKey);
+      if (raw == null || raw.isEmpty) return;
+      final decoded = jsonDecode(raw);
+      if (decoded is! List) return;
+
+      for (final e in decoded) {
+        if (e is Map) {
+          e['isRead'] = true;
+        }
+      }
+
+      await prefs.setString(_prefsKey, jsonEncode(decoded));
+      debugPrint('[NotificationService] Marked all notifications as read');
+    } catch (e) {
+      debugPrint('[NotificationService] markAllAsRead error: $e');
+    }
+  }
+
+  /// Get unread notification count
+  Future<int> getUnreadCount() async {
+    try {
+      final unread = await getUnreadNotifications();
+      return unread.length;
+    } catch (e) {
+      debugPrint('[NotificationService] getUnreadCount error: $e');
+      return 0;
     }
   }
 }
