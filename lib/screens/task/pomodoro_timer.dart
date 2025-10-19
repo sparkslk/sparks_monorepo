@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../widgets/navbar.dart';
+import '../../widgets/therapy_appbar.dart';
 import 'dart:math' as math;
 
 class PomodoroTimerPage extends StatefulWidget {
@@ -208,22 +209,9 @@ class _PomodoroTimerPageState extends State<PomodoroTimerPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Pomodoro Timer',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
+      appBar: const TherapyAppBar(
+        title: 'Pomodoro Timer',
+        showBackButton: true,
       ),
       bottomNavigationBar: MobileNavBar(
         currentIndex: 2,
