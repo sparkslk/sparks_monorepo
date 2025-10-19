@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../widgets/navbar.dart';
+import '../../widgets/therapy_appbar.dart';
+import '../../services/api_service.dart';
 
 class SessionPage extends StatefulWidget {
   final Map<String, dynamic>? appointment;
@@ -21,6 +23,8 @@ class _SessionPageState extends State<SessionPage> with TickerProviderStateMixin
   bool _isSessionActive = false;
   bool _hasJoinedSession = false;
   bool _notesExpanded = false;
+  bool _isLoadingNotes = false;
+  bool _isSavingNotes = false;
 
   @override
   void initState() {
@@ -52,6 +56,113 @@ class _SessionPageState extends State<SessionPage> with TickerProviderStateMixin
 
     _fadeController.forward();
     _slideController.forward();
+    _loadExistingNotes();
+  }
+
+  Future<void> _loadExistingNotes() async {
+    final Map<String, dynamic> appointment = widget.appointment ??
+        (ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?) ??
+        {};
+
+    final sessionId = appointment['id'];
+    if (sessionId == null) return;
+
+    setState(() {
+      _isLoadingNotes = true;
+    });
+
+    try {
+      final result = await ApiService.getSessionById(sessionId);
+      if (result['success'] == true && result['session'] != null) {
+        final sessionNotes = result['session']['sessionNotes'];
+        if (sessionNotes != null && sessionNotes.isNotEmpty) {
+          setState(() {
+            _notesController.text = sessionNotes;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading session notes: $e');
+    } finally {
+      setState(() {
+        _isLoadingNotes = false;
+      });
+    }
+  }
+
+  Future<void> _saveNotes() async {
+    final Map<String, dynamic> appointment = widget.appointment ??
+        (ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?) ??
+        {};
+
+    final sessionId = appointment['id'];
+    if (sessionId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to save notes: Session ID not found'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    if (_notesController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter some notes before saving'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSavingNotes = true;
+    });
+
+    try {
+      final result = await ApiService.updateSessionNotes(
+        sessionId: sessionId,
+        notes: _notesController.text.trim(),
+      );
+
+      if (result['success'] == true) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Notes saved successfully'),
+            backgroundColor: Color(0xFF10B981),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? 'Failed to save notes'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error saving notes: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSavingNotes = false;
+        });
+      }
+    }
   }
 
   @override
@@ -96,25 +207,13 @@ class _SessionPageState extends State<SessionPage> with TickerProviderStateMixin
         },
       ),
       backgroundColor: const Color(0xFFF6F4FC),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black87),
-          onPressed: () =>Navigator.pushReplacementNamed(
-            context,
-            '/appointments',
-          ),
+      appBar: TherapyAppBar(
+        title: 'Session Details',
+        showBackButton: true,
+        onBackPressed: () => Navigator.pushReplacementNamed(
+          context,
+          '/appointments',
         ),
-        title: const Text(
-          'Session Details',
-          style: TextStyle(
-            color: Colors.black87,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Inter',
-          ),
-        ),
-        centerTitle: true,
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
@@ -578,15 +677,7 @@ class _SessionPageState extends State<SessionPage> with TickerProviderStateMixin
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      // Save notes functionality
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Notes saved successfully'),
-                          duration: Duration(seconds: 2),
-                        ),
-                      );
-                    },
+                    onPressed: _isSavingNotes ? null : _saveNotes,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF10B981),
                       padding: const EdgeInsets.symmetric(vertical: 12),
@@ -594,16 +685,26 @@ class _SessionPageState extends State<SessionPage> with TickerProviderStateMixin
                         borderRadius: BorderRadius.circular(12),
                       ),
                       elevation: 0,
+                      disabledBackgroundColor: const Color(0xFF10B981).withOpacity(0.6),
                     ),
-                    child: const Text(
-                      'Save Notes',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: 'Poppins',
-                      ),
-                    ),
+                    child: _isSavingNotes
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text(
+                            'Save Notes',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
                   ),
                 ),
               ],
