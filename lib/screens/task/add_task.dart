@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/navbar.dart';
+import '../../widgets/therapy_appbar.dart';
 import '../../services/api_service.dart';
 import 'dart:convert';
 import '../../services/notification_service.dart';
@@ -68,19 +69,9 @@ class _NewTasksPageState extends State<NewTasksPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.close, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.search, color: Colors.black),
-            onPressed: () {},
-          ),
-        ],
+      appBar: const TherapyAppBar(
+        title: 'Add Task',
+        showBackButton: true,
       ),
       bottomNavigationBar: MobileNavBar(
         currentIndex: 2,
