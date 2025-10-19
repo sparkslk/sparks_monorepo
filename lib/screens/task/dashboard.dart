@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/navbar.dart';
+import '../../widgets/therapy_appbar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../services/api_service.dart';
@@ -114,69 +115,10 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        toolbarHeight: 80,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(
-              bottom: BorderSide(color: Color(0xFFE9ECEF), width: 1),
-            ),
-          ),
-        ),
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 20),
-          child: Container(width: 44, height: 44),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Hi,  ${_userName ?? 'User'}! 👋',
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-                fontWeight: FontWeight.w600,
-                fontSize: 18,
-                color: Color(0xFF1A1A1A),
-                letterSpacing: -0.3,
-              ),
-            ),
-            const Text(
-              'Let\'s get things done today',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 13,
-                color: Color(0xFF6B7280),
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 20.0),
-            child: Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF8F9FA),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE9ECEF), width: 1),
-              ),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(8),
-                onTap: _openNotificationHistory,
-                child: const Icon(
-                  Icons.notifications_outlined,
-                  color: Color(0xFF6B7280),
-                  size: 20,
-                ),
-              ),
-            ),
-          ),
-        ],
+      appBar: const TherapyAppBar(
+        title: 'Tasks',
+        height: 56,
+        backgroundColor: Color(0xFFF8F9FA),
       ),
       bottomNavigationBar: MobileNavBar(
         currentIndex: 2,
@@ -191,16 +133,15 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
           }
         },
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                   // Today's Overview Section
                   Container(
                     padding: const EdgeInsets.all(24),
@@ -445,7 +386,6 @@ class _TaskDashboardPageState extends State<TaskDashboardPage>
             ),
           ),
         ),
-      ),
     );
   }
 
