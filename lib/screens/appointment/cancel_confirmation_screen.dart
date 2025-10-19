@@ -573,14 +573,14 @@ class _CancelConfirmationScreenState extends State<CancelConfirmationScreen> {
       }
 
       final now = DateTime.now();
-      final daysUntil = scheduledAt.difference(now).inDays;
+      final hoursUntil = scheduledAt.difference(now).inHours;
 
-      if (daysUntil >= 5) {
-        return 'Since you are cancelling 5 or more days in advance, you will receive a full refund.';
-      } else if (daysUntil >= 1) {
-        return 'Since you are cancelling less than 5 days in advance, a cancellation fee of Rs. 30 will be deducted from your refund.';
+      if (hoursUntil >= 24) {
+        return 'Since you are cancelling 24 or more hours in advance, you will receive a 90% refund (10% cancellation fee).';
+      } else if (hoursUntil >= 0) {
+        return 'Since you are cancelling within 24 hours of the scheduled session, you will receive a 60% refund (40% cancellation fee).';
       } else {
-        return 'Since you are cancelling within 24 hours of the scheduled session, no refund will be issued according to our policy.';
+        return 'The session has already passed. Please contact support for assistance.';
       }
     } catch (e) {
       return 'Refund amount will be calculated based on our cancellation policy.';
@@ -590,7 +590,11 @@ class _CancelConfirmationScreenState extends State<CancelConfirmationScreen> {
   String _getRefundStatusText(String status) {
     switch (status) {
       case 'FULL_REFUND':
-        return 'Full Refund';
+        return 'Full Refund (100%)';
+      case 'PARTIAL_REFUND_90':
+        return '90% Refund';
+      case 'PARTIAL_REFUND_60':
+        return '60% Refund';
       case 'PARTIAL_REFUND':
         return 'Partial Refund';
       case 'NO_REFUND':

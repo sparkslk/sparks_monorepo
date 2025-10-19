@@ -8,6 +8,7 @@
         android:label="Sparks"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon"
+        android:enableOnBackInvokedCallback="true"
         tools:replace="android:label">
         <activity
             android:name=".MainActivity"

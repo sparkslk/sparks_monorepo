@@ -4,6 +4,7 @@ import '../../widgets/therapy_appbar.dart';
 import '../../services/api_service.dart';
 import 'dart:convert';
 import '../../services/notification_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class NewTasksPage extends StatefulWidget {
   @override
@@ -473,26 +474,28 @@ class _NewTasksPageState extends State<NewTasksPage>
       Navigator.of(context, rootNavigator: true).pop(); // Close loading
       final data = response.body.isNotEmpty ? jsonDecode(response.body) : {};
       if (response.statusCode == 201 && data['success'] == true) {
+        final taskId = data['task']?['id'];
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Task created successfully!'),
             backgroundColor: primaryColor,
           ),
         );
-        if (isAlertEnabled) {
-          final taskTitle = title;
-          final taskBody = description.isNotEmpty
-              ? description
-              : 'New task created';
-          // schedule after 15s
-          NotificationService.I.scheduleAfterSeconds(
-            seconds: 15,
-            title: taskTitle,
-            body: taskBody,
-            kind: 'scheduled_15s',
-            extra: {'source': 'task_create'},
+
+        // Save alert setting to SharedPreferences and schedule 8PM notification
+        if (isAlertEnabled && taskId != null && selectedDate != null) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setBool('task_alert_$taskId', true);
+
+          // Schedule 8PM notification for the task
+          await NotificationService.I.scheduleTaskReminder(
+            taskId: taskId.toString(),
+            title: title,
+            dueDate: selectedDate!,
           );
         }
+
         // Refresh daily incomplete schedule with newest task set (fire and forget)
         NotificationService.I.scheduleDailyIncompleteTasksCheck();
         Navigator.pop(context); // Go back to previous screen
