@@ -426,16 +426,7 @@ class _BookSessionOnePageState extends State<BookSessionOnePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(60),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: const [
-            SizedBox(height: 24),
-            TherapyAppBar(),
-          ],
-        ),
-      ),
+      appBar: const TherapyAppBar(),
       bottomNavigationBar: MobileNavBar(
         currentIndex: 3,
         onTap: (index) {
