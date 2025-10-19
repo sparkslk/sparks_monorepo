@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/navbar.dart';
+import '../../widgets/therapy_appbar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
 import 'dart:convert';
@@ -301,58 +302,9 @@ class _CompletedDayTasksPageState extends State<CompletedDayTasksPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        toolbarHeight: 80,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            border: Border(
-              bottom: BorderSide(color: Color(0xFFE9ECEF), width: 1),
-            ),
-          ),
-        ),
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 20),
-          child: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios,
-              color: Color(0xFF1A1A1A),
-              size: 20,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
-        ),
-        title: FadeTransition(
-          opacity: _fadeAnimation,
-          child: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Task Details',
-                style: TextStyle(
-                  fontFamily: 'Poppins',
-                  fontWeight: FontWeight.w600,
-                  fontSize: 18,
-                  color: Color(0xFF1A1A1A),
-                  letterSpacing: -0.3,
-                ),
-              ),
-              Text(
-                'Complete task information',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 13,
-                  color: Color(0xFF6B7280),
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ],
-          ),
-        ),
+      appBar: const TherapyAppBar(
+        title: 'Task Details',
+        showBackButton: true,
       ),
       bottomNavigationBar: MobileNavBar(
         currentIndex: 2,
