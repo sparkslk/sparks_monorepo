@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../../widgets/navbar.dart';
+import '../../widgets/therapy_appbar.dart';
 import '../../services/api_service.dart';
 
 class CompletedTasksPage extends StatefulWidget {
@@ -16,17 +17,9 @@ class _CompletedTasksPageState extends State<CompletedTasksPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F6F6),
-      appBar: AppBar(
-        title: const Text('Completed Tasks'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF1A1A1A)),
-        titleTextStyle: const TextStyle(
-          color: Color(0xFF1A1A1A),
-          fontFamily: 'Poppins',
-          fontWeight: FontWeight.w600,
-          fontSize: 20,
-        ),
+      appBar: const TherapyAppBar(
+        title: 'Completed Tasks',
+        showBackButton: true,
       ),
       body: AnimatedBuilder(
         animation: _fadeController,
