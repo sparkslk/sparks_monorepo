@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/navbar.dart';
+import '../../widgets/therapy_appbar.dart';
 import '../../services/api_service.dart';
 
 class CancelConfirmationScreen extends StatefulWidget {
@@ -110,23 +111,9 @@ class _CancelConfirmationScreenState extends State<CancelConfirmationScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Confirm Cancellation',
-          style: TextStyle(
-            color: Colors.black87,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Poppins',
-          ),
-        ),
-        centerTitle: true,
+      appBar: const TherapyAppBar(
+        title: 'Confirm Cancellation',
+        showBackButton: true,
       ),
       bottomNavigationBar: MobileNavBar(
         currentIndex: 1,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/navbar.dart';
+import '../../widgets/therapy_appbar.dart';
 
 class CancelAppointmentScreen extends StatefulWidget {
   const CancelAppointmentScreen({super.key});
@@ -46,23 +47,9 @@ class _CancelAppointmentScreenState extends State<CancelAppointmentScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Cancel Appointment',
-          style: TextStyle(
-            color: Colors.black87,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            fontFamily: 'Poppins',
-          ),
-        ),
-        centerTitle: true,
+      appBar: const TherapyAppBar(
+        title: 'Cancel Appointment',
+        showBackButton: true,
       ),
       bottomNavigationBar: MobileNavBar(
         currentIndex: 1,

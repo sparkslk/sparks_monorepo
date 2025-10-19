@@ -127,7 +127,7 @@ class ApiService {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
-        return {'success': true, 'profile': data['profile']};
+        return {'success': true, 'profile': data['profile'], 'hasProfile': data['hasProfile']};
       } else {
         return {
           'success': false,
@@ -136,6 +136,88 @@ class ApiService {
       }
     } catch (e) {
       return {'success': false, 'message': 'Profile fetch error: $e'};
+    }
+  }
+
+  // Update Profile (MOBILE API)
+  static Future<Map<String, dynamic>> updateProfile({
+    String? firstName,
+    String? lastName,
+    Map<String, String>? emergencyContact,
+  }) async {
+    try {
+      final token = await _storage.read(key: 'jwt_token');
+      final uri = Uri.parse('$baseUrl/api/mobile/profile');
+
+      final Map<String, dynamic> body = {};
+      if (firstName != null) body['firstName'] = firstName;
+      if (lastName != null) body['lastName'] = lastName;
+      if (emergencyContact != null) {
+        body['emergencyContactName'] = emergencyContact['name'] ?? '';
+        body['emergencyContactPhone'] = emergencyContact['phone'] ?? '';
+        body['emergencyContactRelation'] = emergencyContact['relation'] ?? '';
+      }
+
+      final response = await http
+          .patch(
+            uri,
+            headers: {
+              ..._headers,
+              if (token != null) 'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return {'success': true, 'profile': data['profile']};
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Profile update failed',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Profile update error: $e'};
+    }
+  }
+
+  // Upload Profile Image (MOBILE API)
+  static Future<Map<String, dynamic>> uploadProfileImage(String base64Image) async {
+    try {
+      final token = await _storage.read(key: 'jwt_token');
+      final uri = Uri.parse('$baseUrl/api/mobile/profile/image');
+
+      final response = await http
+          .post(
+            uri,
+            headers: {
+              ..._headers,
+              if (token != null) 'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({'image': base64Image}),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        // Update local user_data with new image
+        if (data['user'] != null) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('user_data', jsonEncode(data['user']));
+        }
+        return {'success': true, 'image': data['image']};
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Image upload failed',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Image upload error: $e'};
     }
   }
 
@@ -753,6 +835,256 @@ class ApiService {
       return {
         'success': false,
         'message': 'Failed to cancel session: $e'
+      };
+    }
+  }
+
+  // Get specific session by ID
+  static Future<Map<String, dynamic>> getSessionById(String sessionId) async {
+    try {
+      final response = await authenticatedRequest(
+        'GET',
+        '/api/mobile/sessions/$sessionId',
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'session': data['session'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch session details',
+        };
+      }
+    } catch (e) {
+      print('Get session by ID error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to fetch session details: $e'
+      };
+    }
+  }
+
+  // Update session notes (patient's personal notes)
+  static Future<Map<String, dynamic>> updateSessionNotes({
+    required String sessionId,
+    required String notes,
+  }) async {
+    try {
+      final response = await authenticatedRequest(
+        'PATCH',
+        '/api/mobile/sessions/$sessionId/notes',
+        body: {
+          'sessionNotes': notes,
+        },
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'] ?? 'Notes saved successfully',
+          'session': data['session'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to save notes',
+        };
+      }
+    } catch (e) {
+      print('Update session notes error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to save notes: $e'
+      };
+    }
+  }
+
+  // Get patient's active medications
+  static Future<Map<String, dynamic>> getMedications() async {
+    try {
+      final response = await authenticatedRequest(
+        'GET',
+        '/api/mobile/medications',
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'medications': data['medications'] ?? [],
+          'total': data['total'] ?? 0,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch medications',
+        };
+      }
+    } catch (e) {
+      print('Get medications error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to fetch medications: $e'
+      };
+    }
+  }
+
+  // Get patient's game assignments
+  static Future<Map<String, dynamic>> getGameAssignments() async {
+    try {
+      final response = await authenticatedRequest(
+        'GET',
+        '/api/mobile/game-assignments',
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'gameAssignments': data['gameAssignments'] ?? [],
+          'total': data['total'] ?? 0,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch game assignments',
+        };
+      }
+    } catch (e) {
+      print('Get game assignments error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to fetch game assignments: $e'
+      };
+    }
+  }
+
+  // Get patient's assessment assignments
+  static Future<Map<String, dynamic>> getAssessments() async {
+    try {
+      final response = await authenticatedRequest(
+        'GET',
+        '/api/mobile/assessments',
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'assessments': data['assessments'] ?? [],
+          'total': data['total'] ?? 0,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch assessments',
+        };
+      }
+    } catch (e) {
+      print('Get assessments error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to fetch assessments: $e'
+      };
+    }
+  }
+
+  // Get featured blogs (limited)
+  static Future<Map<String, dynamic>> getFeaturedBlogs({int limit = 2}) async {
+    try {
+      final response = await authenticatedRequest(
+        'GET',
+        '/api/mobile/blogs?limit=$limit',
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'blogs': data['blogs'] ?? [],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch featured blogs',
+        };
+      }
+    } catch (e) {
+      print('Get featured blogs error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to fetch featured blogs: $e'
+      };
+    }
+  }
+
+  // Get all blogs
+  static Future<Map<String, dynamic>> getAllBlogs() async {
+    try {
+      final response = await authenticatedRequest(
+        'GET',
+        '/api/mobile/blogs',
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'blogs': data['blogs'] ?? [],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch blogs',
+        };
+      }
+    } catch (e) {
+      print('Get all blogs error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to fetch blogs: $e'
+      };
+    }
+  }
+
+  // Get blog by ID
+  static Future<Map<String, dynamic>> getBlogById(String blogId) async {
+    try {
+      final response = await authenticatedRequest(
+        'GET',
+        '/api/mobile/blogs/$blogId',
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'blog': data['blog'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch blog',
+        };
+      }
+    } catch (e) {
+      print('Get blog by ID error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to fetch blog: $e'
       };
     }
   }

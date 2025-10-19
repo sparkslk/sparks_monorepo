@@ -8,6 +8,10 @@ import 'screens/setup/setup_one.dart';
 import 'screens/setup/setup_two.dart';
 import 'screens/setup/setup_three.dart';
 import 'screens/user/dashboard.dart';
+import 'screens/user/profile_page.dart';
+import 'screens/user/relaxation_page.dart';
+import 'screens/user/blog_list_page.dart';
+import 'screens/user/blog_detail_page.dart';
 import 'screens/therapy/choose_therapist_screen.dart';
 import 'screens/therapy/therapist_profile_screen.dart';
 import 'screens/welcome/choose.dart';
@@ -58,6 +62,15 @@ class SparksApp extends StatelessWidget {
         '/setup_two': (context) => ProfileSetupStep2(),
         '/setup_three': (context) => ProfileSetupStep3(),
         '/dashboard': (context) => DashboardScreen(),
+        '/profile': (context) => ProfilePage(),
+        '/relaxation': (context) => RelaxationPage(),
+        '/blog_list': (context) => BlogListPage(),
+        '/blog_detail': (context) {
+          final args =
+              ModalRoute.of(context)!.settings.arguments
+                  as Map<String, dynamic>;
+          return BlogDetailPage(blogId: args['blogId'] as String);
+        },
         '/choose_therapist': (context) => ChooseTherapistScreen(),
         '/therapist_profile': (context) => TherapistProfileScreen(),
         '/choose': (context) => ChooseScreen(),
