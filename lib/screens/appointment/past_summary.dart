@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../widgets/navbar.dart';
+import '../../widgets/therapy_appbar.dart';
+import '../../services/api_service.dart';
 
 class SessionSummaryPage extends StatefulWidget {
   final Map<String, dynamic> appointment;
@@ -19,6 +22,16 @@ class _SessionSummaryPageState extends State<SessionSummaryPage>
   late Animation<double> _fadeAnimation;
   int _currentRating = 0;
 
+  // Data state
+  Map<String, dynamic>? _sessionDetails;
+  List<dynamic> _medications = [];
+  List<dynamic> _gameAssignments = [];
+  List<dynamic> _assessments = [];
+
+  // Loading states
+  bool _isLoading = true;
+  String? _error;
+
   @override
   void initState() {
     super.initState();
@@ -31,6 +44,58 @@ class _SessionSummaryPageState extends State<SessionSummaryPage>
     );
     _fadeController.forward();
     _currentRating = widget.appointment['rating'] ?? 0;
+    _loadSessionData();
+  }
+
+  Future<void> _loadSessionData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      final sessionId = widget.appointment['id'];
+
+      // Load all data in parallel
+      final results = await Future.wait([
+        ApiService.getSessionById(sessionId),
+        ApiService.getMedications(),
+        ApiService.getGameAssignments(),
+        ApiService.getAssessments(),
+      ]);
+
+      if (!mounted) return;
+
+      setState(() {
+        // Session details
+        if (results[0]['success'] == true) {
+          _sessionDetails = results[0]['session'];
+        }
+
+        // Medications
+        if (results[1]['success'] == true) {
+          _medications = results[1]['medications'] ?? [];
+        }
+
+        // Game assignments
+        if (results[2]['success'] == true) {
+          _gameAssignments = results[2]['gameAssignments'] ?? [];
+        }
+
+        // Assessments
+        if (results[3]['success'] == true) {
+          _assessments = results[3]['assessments'] ?? [];
+        }
+
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to load session data: $e';
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -56,45 +121,85 @@ class _SessionSummaryPageState extends State<SessionSummaryPage>
         },
       ),
       backgroundColor: const Color(0xFFF6F4FC),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF6F4FC),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Session Summary',
-          style: TextStyle(
-            color: Colors.black87,
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
+      appBar: const TherapyAppBar(
+        title: 'Session Summary',
+        showBackButton: true,
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildAppointmentHeader(),
-              const SizedBox(height: 20),
-              _buildSessionNotes(),
-              const SizedBox(height: 20),
-              _buildGamesCompleted(),
-              const SizedBox(height: 20),
-              _buildActivitiesCompleted(),
-              const SizedBox(height: 20),
-              _buildMedicationsAssigned(),
-              const SizedBox(height: 20),
-              _buildRatingSection(),
-              const SizedBox(height: 30),
-            ],
-          ),
-        ),
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xff8159a8),
+                ),
+              )
+            : _error != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: Colors.red,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              color: Colors.red,
+                              fontFamily: 'Poppins',
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton(
+                            onPressed: _loadSessionData,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xff8159a8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: const Text(
+                              'Retry',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontFamily: 'Poppins',
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildAppointmentHeader(),
+                        const SizedBox(height: 20),
+                        _buildSessionNotes(),
+                        const SizedBox(height: 20),
+                        _buildGamesCompleted(),
+                        const SizedBox(height: 20),
+                        _buildActivitiesCompleted(),
+                        const SizedBox(height: 20),
+                        _buildMedicationsAssigned(),
+                        const SizedBox(height: 20),
+                        _buildRatingSection(),
+                        const SizedBox(height: 30),
+                      ],
+                    ),
+                  ),
       ),
     );
   }
@@ -209,337 +314,427 @@ class _SessionSummaryPageState extends State<SessionSummaryPage>
   }
 
   Widget _buildSessionNotes() {
+    final sessionNotes = _sessionDetails?['sessionNotes'];
+    final hasNotes = sessionNotes != null && sessionNotes.toString().trim().isNotEmpty;
+
     return _buildSectionCard(
       title: 'Session Notes',
       icon: Icons.note_alt,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Key Discussion Points:',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade800,
-              fontFamily: 'Poppins',
+      child: hasNotes
+          ? Text(
+              sessionNotes.toString(),
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey.shade700,
+                fontFamily: 'Poppins',
+                height: 1.5,
+              ),
+            )
+          : Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 20,
+                    color: Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'No notes available for this session',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '• Explored coping strategies for managing anxiety in social situations\n• Discussed progress with mindfulness exercises\n• Addressed sleep patterns and their impact on mood\n• Reviewed homework assignments from previous session',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade700,
-              fontFamily: 'Poppins',
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Therapist Observations:',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: Colors.grey.shade800,
-              fontFamily: 'Poppins',
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Patient showed significant improvement in expressing emotions and demonstrated better understanding of anxiety triggers. Recommend continuing current therapeutic approach.',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey.shade700,
-              fontFamily: 'Poppins',
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
     );
   }
 
   Widget _buildGamesCompleted() {
-    final games = [
-      {'name': 'Mood Tracker', 'score': '85%', 'duration': '15 min'},
-      {'name': 'Breathing Exercise', 'score': '92%', 'duration': '10 min'},
-      {'name': 'Cognitive Restructuring', 'score': '78%', 'duration': '20 min'},
-    ];
-
     return _buildSectionCard(
-      title: 'Games Completed',
+      title: 'Games Assigned',
       icon: Icons.games,
-      child: Column(
-        children: games.map((game) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xff8159a8).withOpacity(0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xff8159a8).withOpacity(0.1),
+      child: _gameAssignments.isEmpty
+          ? Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
               ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: const Color(0xff8159a8).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.psychology,
-                    color: Color(0xff8159a8),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
                     size: 20,
+                    color: Colors.grey.shade600,
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        game['name']!,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                          fontFamily: 'Poppins',
-                        ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'No games assigned yet',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                        fontFamily: 'Poppins',
                       ),
-                      Text(
-                        'Duration: ${game['duration']}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF10B981).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    game['score']!,
-                    style: const TextStyle(
-                      color: Color(0xFF10B981),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Poppins',
                     ),
                   ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  Widget _buildActivitiesCompleted() {
-    final activities = [
-      {'name': 'Daily Journal Entry', 'status': 'Completed', 'date': 'Dec 8'},
-      {'name': 'Mindfulness Meditation', 'status': 'Completed', 'date': 'Dec 8'},
-      {'name': 'Gratitude Practice', 'status': 'Completed', 'date': 'Dec 7'},
-      {'name': 'Sleep Hygiene Check', 'status': 'Partially Completed', 'date': 'Dec 6'},
-    ];
-
-    return _buildSectionCard(
-      title: 'Activities Completed',
-      icon: Icons.check_circle_outline,
-      child: Column(
-        children: activities.map((activity) {
-          final isCompleted = activity['status'] == 'Completed';
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: isCompleted
-                  ? const Color(0xFF10B981).withOpacity(0.05)
-                  : const Color(0xFFF59E0B).withOpacity(0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: isCompleted
-                    ? const Color(0xFF10B981).withOpacity(0.1)
-                    : const Color(0xFFF59E0B).withOpacity(0.1),
+                ],
               ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  isCompleted ? Icons.check_circle : Icons.schedule,
-                  color: isCompleted ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        activity['name']!,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                      Text(
-                        activity['date']!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                          fontFamily: 'Poppins',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isCompleted
-                        ? const Color(0xFF10B981).withOpacity(0.1)
-                        : const Color(0xFFF59E0B).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    activity['status']!,
-                    style: TextStyle(
-                      color: isCompleted ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      fontFamily: 'Poppins',
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
+            )
+          : Column(
+              children: _gameAssignments.map<Widget>((assignment) {
+                final game = assignment['game'];
+                final status = assignment['status'] ?? 'ACTIVE';
+                final lastSession = assignment['lastSession'];
+                final sessionsCompleted = assignment['sessionsCompleted'] ?? 0;
 
-  Widget _buildMedicationsAssigned() {
-    final medications = [
-      {
-        'name': 'Sertraline 50mg',
-        'frequency': 'Once daily',
-        'duration': '30 days',
-        'instructions': 'Take with food in the morning'
-      },
-      {
-        'name': 'Melatonin 3mg',
-        'frequency': 'As needed',
-        'duration': '14 days',
-        'instructions': 'Take 30 minutes before bedtime'
-      },
-    ];
-
-    return _buildSectionCard(
-      title: 'Medications Assigned',
-      icon: Icons.medication,
-      child: Column(
-        children: medications.map((medication) {
-          return Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEF4444).withOpacity(0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: const Color(0xFFEF4444).withOpacity(0.1),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEF4444).withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: const Icon(
-                        Icons.medical_services,
-                        color: Color(0xFFEF4444),
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            medication['name']!,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black87,
-                              fontFamily: 'Poppins',
-                            ),
-                          ),
-                          Text(
-                            '${medication['frequency']} • ${medication['duration']}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
-                              fontFamily: 'Poppins',
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(12),
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(8),
+                    color: const Color(0xff8159a8).withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xff8159a8).withOpacity(0.1),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.info_outline,
-                        size: 16,
-                        color: Colors.grey.shade600,
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: const Color(0xff8159a8).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.psychology,
+                          color: Color(0xff8159a8),
+                          size: 20,
+                        ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 12),
                       Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              game['title'] ?? 'Game',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                                fontFamily: 'Poppins',
+                              ),
+                            ),
+                            Text(
+                              'Sessions: $sessionsCompleted',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                                fontFamily: 'Poppins',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: status == 'COMPLETED'
+                              ? const Color(0xFF10B981).withOpacity(0.1)
+                              : const Color(0xFFF59E0B).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                         child: Text(
-                          medication['instructions']!,
+                          status,
                           style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade700,
+                            color: status == 'COMPLETED'
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFFF59E0B),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
                             fontFamily: 'Poppins',
                           ),
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
+                );
+              }).toList(),
             ),
-          );
-        }).toList(),
-      ),
+    );
+  }
+
+  Widget _buildActivitiesCompleted() {
+    return _buildSectionCard(
+      title: 'Assessments Assigned',
+      icon: Icons.check_circle_outline,
+      child: _assessments.isEmpty
+          ? Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 20,
+                    color: Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'No assessments assigned yet',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              children: _assessments.map<Widget>((assignment) {
+                final assessment = assignment['assessment'];
+                final status = assignment['status'] ?? 'PENDING';
+                final isCompleted = status == 'COMPLETED';
+                final assignedAt = assignment['assignedAt'];
+                final completedAt = assignment['completedAt'];
+
+                String dateText = '';
+                if (assignedAt != null) {
+                  try {
+                    final date = DateTime.parse(assignedAt);
+                    dateText = DateFormat('MMM d').format(date);
+                  } catch (e) {
+                    dateText = 'Recently assigned';
+                  }
+                }
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isCompleted
+                        ? const Color(0xFF10B981).withOpacity(0.05)
+                        : const Color(0xFFF59E0B).withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isCompleted
+                          ? const Color(0xFF10B981).withOpacity(0.1)
+                          : const Color(0xFFF59E0B).withOpacity(0.1),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isCompleted ? Icons.check_circle : Icons.schedule,
+                        color: isCompleted ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              assessment['title'] ?? 'Assessment',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black87,
+                                fontFamily: 'Poppins',
+                              ),
+                            ),
+                            Text(
+                              dateText,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade600,
+                                fontFamily: 'Poppins',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isCompleted
+                              ? const Color(0xFF10B981).withOpacity(0.1)
+                              : const Color(0xFFF59E0B).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          status,
+                          style: TextStyle(
+                            color: isCompleted ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Poppins',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+    );
+  }
+
+  Widget _buildMedicationsAssigned() {
+    return _buildSectionCard(
+      title: 'Medications Assigned',
+      icon: Icons.medication,
+      child: _medications.isEmpty
+          ? Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 20,
+                    color: Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'No medications assigned',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
+                        fontFamily: 'Poppins',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : Column(
+              children: _medications.map<Widget>((medication) {
+                final name = medication['name'] ?? 'Medication';
+                final dosage = medication['dosage'] ?? '';
+                final frequency = medication['frequency'] ?? 'As directed';
+                final instructions = medication['instructions'];
+                final mealTiming = medication['mealTiming'] ?? 'NONE';
+
+                String frequencyText = frequency.toString().replaceAll('_', ' ');
+                if (frequencyText == 'ONCE DAILY') frequencyText = 'Once daily';
+                else if (frequencyText == 'TWICE DAILY') frequencyText = 'Twice daily';
+                else if (frequencyText == 'THREE TIMES DAILY') frequencyText = 'Three times daily';
+                else if (frequencyText == 'AS NEEDED') frequencyText = 'As needed';
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEF4444).withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFEF4444).withOpacity(0.1),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEF4444).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.medical_services,
+                              color: Color(0xFFEF4444),
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '$name ${dosage.isNotEmpty ? dosage : ''}',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.black87,
+                                    fontFamily: 'Poppins',
+                                  ),
+                                ),
+                                Text(
+                                  frequencyText,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey.shade600,
+                                    fontFamily: 'Poppins',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (instructions != null && instructions.toString().isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                size: 16,
+                                color: Colors.grey.shade600,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  instructions.toString(),
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey.shade700,
+                                    fontFamily: 'Poppins',
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
     );
   }
 
