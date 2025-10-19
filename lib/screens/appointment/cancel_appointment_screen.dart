@@ -122,9 +122,9 @@ class _CancelAppointmentScreenState extends State<CancelAppointmentScreen> {
             _buildPolicySection(
               'Cancellation Rules',
               [
-                'Sessions cancelled 5 or more days in advance will receive a full refund.',
-                'Sessions cancelled less than 5 days in advance will be charged a cancellation fee of Rs. 30.',
-                'Sessions cancelled within 24 hours of the scheduled time are non-refundable.',
+                'Sessions cancelled 24 or more hours in advance: 90% refund (10% cancellation fee)',
+                'Sessions cancelled within 24 hours: 60% refund (40% cancellation fee)',
+                'Cancellation fees are calculated as a percentage of your session payment',
                 'Emergency cancellations may be reviewed on a case-by-case basis.',
               ],
             ),
@@ -136,7 +136,7 @@ class _CancelAppointmentScreenState extends State<CancelAppointmentScreen> {
               [
                 'Refunds will be processed within 5-7 business days.',
                 'Refunds will be credited to the original payment method used for booking.',
-                'Cancellation fees, if applicable, will be deducted from the refund amount.',
+                'The refund amount displayed includes the cancellation fee deduction.',
                 'Bank processing fees may apply depending on your financial institution.',
                 'For payment disputes, please contact our support team within 14 days.',
               ],
