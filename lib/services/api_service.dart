@@ -1088,4 +1088,80 @@ class ApiService {
       };
     }
   }
+
+  // Get Dashboard Data (MOBILE API)
+  static Future<Map<String, dynamic>> getDashboardData() async {
+    try {
+      final response = await authenticatedRequest(
+        'GET',
+        '/api/mobile/dashboard',
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {'success': true, 'data': data};
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch dashboard data',
+        };
+      }
+    } catch (e) {
+      print('Get dashboard data error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to fetch dashboard data: $e'
+      };
+    }
+  }
+
+  // Get Today's Tasks (MOBILE API)
+  static Future<Map<String, dynamic>> getTodayTasks() async {
+    try {
+      final response = await authenticatedRequest(
+        'GET',
+        '/api/mobile/task',
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['tasks'] is List) {
+        final now = DateTime.now();
+        final todayTasks = (data['tasks'] as List).where((task) {
+          if (task['dueDate'] != null) {
+            final due = DateTime.tryParse(task['dueDate']);
+            if (due != null) {
+              return due.year == now.year &&
+                  due.month == now.month &&
+                  due.day == now.day;
+            }
+          }
+          return false;
+        }).toList();
+
+        final completedToday = todayTasks.where((task) =>
+          task['status'] == 'COMPLETED').length;
+
+        return {
+          'success': true,
+          'tasks': todayTasks,
+          'total': todayTasks.length,
+          'completed': completedToday,
+          'pending': todayTasks.length - completedToday,
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch tasks',
+        };
+      }
+    } catch (e) {
+      print('Get today tasks error: $e');
+      return {
+        'success': false,
+        'message': 'Failed to fetch tasks: $e'
+      };
+    }
+  }
 }
