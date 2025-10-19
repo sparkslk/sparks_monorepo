@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../widgets/navbar.dart';
-
+import '../../widgets/therapy_appbar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import '../../services/api_service.dart';
@@ -19,6 +19,8 @@ class _DashboardScreenState extends State<DashboardScreen>
   late AnimationController _slideController;
   late Animation<double> _fadeAnimation;
   Animation<Offset>? _slideAnimation;
+  List<dynamic> _featuredBlogs = [];
+  bool _blogsLoading = true;
 
   @override
   void initState() {
@@ -45,6 +47,33 @@ class _DashboardScreenState extends State<DashboardScreen>
     _slideController.forward();
 
     _loadUserName();
+    _loadFeaturedBlogs();
+  }
+
+  Future<void> _loadFeaturedBlogs() async {
+    setState(() {
+      _blogsLoading = true;
+    });
+
+    try {
+      final result = await ApiService.getFeaturedBlogs(limit: 2);
+      if (result['success'] == true && mounted) {
+        setState(() {
+          _featuredBlogs = result['blogs'] ?? [];
+          _blogsLoading = false;
+        });
+      } else {
+        setState(() {
+          _blogsLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _blogsLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _loadUserName() async {
@@ -85,114 +114,12 @@ class _DashboardScreenState extends State<DashboardScreen>
 
   @override
   Widget build(BuildContext context) {
-    final List<String> featuredImages = [
-      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=200&q=80',
-      'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?auto=format&fit=crop&w=200&q=80',
-    ];
-
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        toolbarHeight: 70,
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x08000000),
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-        ),
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 16),
-          child: IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF8159A8).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.emergency,
-                color: Color(0xFF8159A8),
-                size: 24,
-              ),
-            ),
-            onPressed: () {},
-          ),
-        ),
-        title: const Text(
-          'Sparks Dashboard',
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontWeight: FontWeight.w700,
-            fontSize: 20,
-            color: Color(0xFF1A1A1A),
-            letterSpacing: -0.5,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF8159A8).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Stack(
-                children: [
-                  const Icon(
-                    Icons.notifications_none,
-                    color: Color(0xFF8159A8),
-                    size: 22,
-                  ),
-                  Positioned(
-                    right: 0,
-                    top: 0,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFF4757),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            onPressed: () {},
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: GestureDetector(
-              onTap: _logout,
-              child: Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF8159A8),
-                  borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF8159A8).withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Icon(Icons.person, color: Colors.white, size: 22),
-              ),
-            ),
-          ),
-        ],
+      appBar: const TherapyAppBar(
+        title: 'Dashboard',
+        height: 56,
+        backgroundColor: Color(0xFFFAFAFA),
       ),
       bottomNavigationBar: MobileNavBar(
         currentIndex: 0,
@@ -207,13 +134,32 @@ class _DashboardScreenState extends State<DashboardScreen>
           }
         },
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: _slideAnimation == null
-                ? Padding(
+      body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: FadeTransition(
+          opacity: _fadeAnimation,
+          child: _slideAnimation == null
+              ? Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildWelcomeSection(),
+                      const SizedBox(height: 32),
+                      _buildStatsSection(),
+                      const SizedBox(height: 32),
+                      _buildNextAppointmentSection(),
+                      const SizedBox(height: 32),
+                      _buildFeaturedArticlesSection(),
+                      const SizedBox(height: 32),
+                      _buildExploreSection(),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                )
+              : SlideTransition(
+                  position: _slideAnimation!,
+                  child: Padding(
                     padding: const EdgeInsets.all(24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -224,35 +170,14 @@ class _DashboardScreenState extends State<DashboardScreen>
                         const SizedBox(height: 32),
                         _buildNextAppointmentSection(),
                         const SizedBox(height: 32),
-                        _buildFeaturedArticlesSection(featuredImages),
+                        _buildFeaturedArticlesSection(),
                         const SizedBox(height: 32),
                         _buildExploreSection(),
                         const SizedBox(height: 24),
                       ],
                     ),
-                  )
-                : SlideTransition(
-                    position: _slideAnimation!,
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildWelcomeSection(),
-                          const SizedBox(height: 32),
-                          _buildStatsSection(),
-                          const SizedBox(height: 32),
-                          _buildNextAppointmentSection(),
-                          const SizedBox(height: 32),
-                          _buildFeaturedArticlesSection(featuredImages),
-                          const SizedBox(height: 32),
-                          _buildExploreSection(),
-                          const SizedBox(height: 24),
-                        ],
-                      ),
-                    ),
                   ),
-          ),
+                ),
         ),
       ),
     );
@@ -459,7 +384,7 @@ class _DashboardScreenState extends State<DashboardScreen>
     );
   }
 
-  Widget _buildFeaturedArticlesSection(List<String> featuredImages) {
+  Widget _buildFeaturedArticlesSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -477,7 +402,9 @@ class _DashboardScreenState extends State<DashboardScreen>
               ),
             ),
             TextButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.pushNamed(context, '/blog_list');
+              },
               child: const Text(
                 'View all',
                 style: TextStyle(
@@ -490,76 +417,139 @@ class _DashboardScreenState extends State<DashboardScreen>
           ],
         ),
         const SizedBox(height: 16),
-        SizedBox(
-          height: 120,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: featuredImages.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 16),
-            itemBuilder: (context, idx) => Container(
-              width: 160,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 15,
-                    offset: const Offset(0, 4),
+        _blogsLoading
+            ? const SizedBox(
+                height: 120,
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF8159A8),
                   ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: Stack(
-                  children: [
-                    Image.network(
-                      featuredImages[idx],
-                      width: 160,
-                      height: 120,
-                      fit: BoxFit.cover,
+                ),
+              )
+            : _featuredBlogs.isEmpty
+                ? Container(
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.transparent,
-                            Colors.black.withOpacity(0.3),
-                          ],
+                    child: Center(
+                      child: Text(
+                        'No featured articles yet',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          color: Colors.grey[600],
                         ),
                       ),
                     ),
-                    if (idx == 1)
-                      Positioned(
-                        top: 12,
-                        right: 12,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFF4757),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Text(
-                            '30%',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
+                  )
+                : SizedBox(
+                    height: 120,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: _featuredBlogs.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 16),
+                      itemBuilder: (context, idx) {
+                        final blog = _featuredBlogs[idx];
+                        final String title = blog['title'] ?? 'Untitled';
+                        final String? imageUrl = blog['imageUrl'];
+
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.pushNamed(
+                              context,
+                              '/blog_detail',
+                              arguments: {'blogId': blog['id'].toString()},
+                            );
+                          },
+                          child: Container(
+                            width: 160,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Stack(
+                                children: [
+                                  // Background Image
+                                  if (imageUrl != null && imageUrl.isNotEmpty)
+                                    Image.memory(
+                                      base64Decode(imageUrl.split(',')[1]),
+                                      width: 160,
+                                      height: 120,
+                                      fit: BoxFit.cover,
+                                      errorBuilder:
+                                          (context, error, stackTrace) {
+                                        return Container(
+                                          color: const Color(0xFF8159A8)
+                                              .withOpacity(0.1),
+                                          child: const Icon(
+                                            Icons.article,
+                                            size: 48,
+                                            color: Color(0xFF8159A8),
+                                          ),
+                                        );
+                                      },
+                                    )
+                                  else
+                                    Container(
+                                      width: 160,
+                                      height: 120,
+                                      color: const Color(0xFF8159A8)
+                                          .withOpacity(0.1),
+                                      child: const Icon(
+                                        Icons.article,
+                                        size: 48,
+                                        color: Color(0xFF8159A8),
+                                      ),
+                                    ),
+                                  // Gradient Overlay
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          Colors.black.withOpacity(0.6),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  // Title
+                                  Positioned(
+                                    bottom: 8,
+                                    left: 8,
+                                    right: 8,
+                                    child: Text(
+                                      title,
+                                      style: const TextStyle(
+                                        fontFamily: 'Inter',
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                      ),
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
+                        );
+                      },
+                    ),
+                  ),
       ],
     );
   }
@@ -594,7 +584,9 @@ class _DashboardScreenState extends State<DashboardScreen>
           description:
               'Engaging exercises to boost your concentration and comprehension.',
           buttonText: 'Start Training',
-          onPressed: () {},
+          onPressed: () {
+            Navigator.pushNamed(context, '/relaxation');
+          },
         ),
       ],
     );
