@@ -96,16 +96,7 @@ class _PaymentConfirmationScreenState extends State<PaymentConfirmationScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: PreferredSize(
-        preferredSize: Size.fromHeight(60),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: const [
-            SizedBox(height: 24),
-            TherapyAppBar(),
-          ],
-        ),
-      ),
+      appBar: const TherapyAppBar(),
       bottomNavigationBar: MobileNavBar(
         currentIndex: 3,
         onTap: (index) {
