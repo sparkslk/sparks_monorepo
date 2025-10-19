@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:async';
+import '../services/notification_service.dart';
+import 'notification_center.dart';
 
 class TherapyAppBar extends StatefulWidget implements PreferredSizeWidget {
   final String title;
@@ -30,20 +32,50 @@ class _TherapyAppBarState extends State<TherapyAppBar> {
   String? _userImage;
   String? _userName;
   Timer? _logoutTimer;
+  int _unreadCount = 0;
+  Timer? _notificationRefreshTimer;
 
   @override
   void initState() {
     super.initState();
-    _loadUserData();
+    loadUserData();
+    _loadUnreadCount();
+    // Refresh unread count every 30 seconds
+    _notificationRefreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (timer) => _loadUnreadCount(),
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload user data when returning from other screens (e.g., profile page)
+    // This ensures profile picture updates are reflected immediately
+    loadUserData();
   }
 
   @override
   void dispose() {
     _logoutTimer?.cancel();
+    _notificationRefreshTimer?.cancel();
     super.dispose();
   }
 
-  Future<void> _loadUserData() async {
+  Future<void> _loadUnreadCount() async {
+    try {
+      final count = await NotificationService.I.getUnreadCount();
+      if (mounted) {
+        setState(() {
+          _unreadCount = count;
+        });
+      }
+    } catch (e) {
+      // Silent fail
+    }
+  }
+
+  Future<void> loadUserData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final userDataStr = prefs.getString('user_data');
@@ -172,27 +204,70 @@ class _TherapyAppBarState extends State<TherapyAppBar> {
           // Notification and Profile Icons (right)
           Row(
             children: [
-              IconButton(
-                icon: const Icon(
-                  Icons.notifications_none,
-                  color: Colors.black54,
-                  size: 24,
-                ),
-                onPressed: () {
-                  // TODO: Navigate to notifications page when implemented
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Notifications feature coming soon'),
-                      duration: Duration(seconds: 2),
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.notifications_none,
+                      color: Colors.black54,
+                      size: 24,
                     ),
-                  );
-                },
-                tooltip: 'Notifications',
+                    onPressed: () async {
+                      // Show notification center bottom sheet
+                      await showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        builder: (context) => DraggableScrollableSheet(
+                          initialChildSize: 0.7,
+                          minChildSize: 0.5,
+                          maxChildSize: 0.9,
+                          builder: (context, scrollController) =>
+                              const NotificationCenter(),
+                        ),
+                      );
+                      // Refresh unread count after closing notification center
+                      _loadUnreadCount();
+                    },
+                    tooltip: 'Notifications',
+                  ),
+                  if (_unreadCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFEF4444),
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Center(
+                          child: Text(
+                            _unreadCount > 9 ? '9+' : '$_unreadCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(width: 4),
               GestureDetector(
-                onTap: () {
-                  Navigator.pushNamed(context, '/profile');
+                onTap: () async {
+                  // Navigate to profile page and refresh user data when returning
+                  await Navigator.pushNamed(context, '/profile');
+                  // Reload user data to reflect any profile picture changes
+                  loadUserData();
+                  _loadUnreadCount();
                 },
                 onLongPressStart: (details) {
                   _startLogoutTimer();

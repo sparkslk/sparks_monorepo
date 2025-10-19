@@ -115,6 +115,10 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F7FC),
+      appBar: const TherapyAppBar(
+        title: 'Therapist Profile',
+        showBackButton: true,
+      ),
       bottomNavigationBar: MobileNavBar(
         currentIndex: 3,
         onTap: (index) {
@@ -160,9 +164,6 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const TherapyAppBar(),
-                            const SizedBox(height: 24),
-
                             // Enhanced Profile Card
                             _buildProfileCard(),
                             const SizedBox(height: 28),
@@ -629,7 +630,7 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
           ),
           const SizedBox(height: 16),
           SizedBox(
-            height: 160,
+            height: 200,
             child: PageView(
               controller: _reviewPageController,
               onPageChanged: (index) {
@@ -997,12 +998,52 @@ class _ReviewCard extends StatelessWidget {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xff8159a8).withOpacity(0.3)),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xff8159a8).withOpacity(0.3), width: 2),
                 ),
-                child: CircleAvatar(
-                  backgroundImage: NetworkImage(avatarUrl),
-                  radius: 18,
+                child: ClipOval(
+                  child: Image.network(
+                    avatarUrl,
+                    width: 36,
+                    height: 36,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0E6FF),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          size: 20,
+                          color: Color(0xff8159a8),
+                        ),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0E6FF),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: const Color(0xff8159a8),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -1051,19 +1092,17 @@ class _ReviewCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          Flexible(
-            child: Text(
-              review,
-              style: const TextStyle(
-                fontFamily: 'Poppins',
-                letterSpacing: 0.5,
-                fontSize: 14,
-                color: Colors.black87,
-                height: 1.4,
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
+          Text(
+            review,
+            style: const TextStyle(
+              fontFamily: 'Poppins',
+              letterSpacing: 0.5,
+              fontSize: 13,
+              color: Colors.black87,
+              height: 1.4,
             ),
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

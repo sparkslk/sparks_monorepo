@@ -181,23 +181,27 @@ class _RescheduleSessionPageState extends State<RescheduleSessionPage> {
       final orderId = paymentData['orderId'];
 
       // Configure PayHere payment
+      // Note: merchant_secret is NOT sent to mobile for security
+      // Instead, we use the hash generated on the backend
       Map<String, dynamic> paymentObject = {
         "sandbox": true,
-        "merchant_id": paymentData['merchantId'],
-        "merchant_secret": paymentData['merchantSecret'],
-        "notify_url": paymentData['notifyUrl'],
-        "order_id": orderId,
-        "items": paymentData['items'],
-        "amount": paymentData['amount'],
-        "currency": paymentData['currency'],
-        "first_name": paymentData['customerFirstName'],
-        "last_name": paymentData['customerLastName'],
-        "email": paymentData['customerEmail'],
-        "phone": paymentData['customerPhone'],
-        "address": paymentData['customerAddress'],
-        "city": paymentData['customerCity'],
+        "merchant_id": paymentData['merchantId'] ?? '',
+        "hash": paymentData['hash'] ?? '',
+        "notify_url": paymentData['notifyUrl'] ?? '',
+        "order_id": orderId ?? '',
+        "items": paymentData['items'] ?? 'Reschedule Fee',
+        "amount": paymentData['amount']?.toString() ?? '0.00',
+        "currency": paymentData['currency'] ?? 'LKR',
+        "first_name": paymentData['customerFirstName'] ?? firstName,
+        "last_name": paymentData['customerLastName'] ?? lastName,
+        "email": paymentData['customerEmail'] ?? email,
+        "phone": paymentData['customerPhone'] ?? phone,
+        "address": paymentData['customerAddress'] ?? address,
+        "city": paymentData['customerCity'] ?? 'Colombo',
         "country": "Sri Lanka",
       };
+
+      print('DEBUG: Reschedule PayHere payment object: $paymentObject');
 
       // Open PayHere
       PayHere.startPayment(
