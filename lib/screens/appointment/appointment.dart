@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../widgets/navbar.dart';
+import '../../widgets/therapy_appbar.dart';
 import '../../services/api_service.dart';
 import 'join_session.dart'; // Import the SessionPage
 import 'past_summary.dart'; // Import the SessionSummaryPage
@@ -176,6 +177,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
       body: SafeArea(
         child: Column(
           children: [
+            const TherapyAppBar(title: 'Appointments'),
             // Header Section
             Container(
               padding: const EdgeInsets.all(20),
