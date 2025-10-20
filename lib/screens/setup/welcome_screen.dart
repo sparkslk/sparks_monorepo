@@ -110,7 +110,7 @@ class WelcomeScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                         child: InkWell(
                           onTap: () {
-                            // You can route to onboarding if needed
+                            Navigator.pushNamed(context, '/adhd_quiz');
                           },
                           borderRadius: BorderRadius.circular(12),
                           child: Container(
@@ -168,7 +168,7 @@ class WelcomeScreen extends StatelessWidget {
                       style: TextStyle(fontSize: 16, color: Colors.white),
                     ),
                     onPressed: () {
-                      // Implement navigation to dashboard
+                      Navigator.pushReplacementNamed(context, '/dashboard');
                     },
                   ),
                 ),
