@@ -174,14 +174,30 @@ class _SessionPageState extends State<SessionPage> with TickerProviderStateMixin
   }
 
   void _launchZoomLink() async {
-    // Sample Zoom link - replace with actual link from appointment data
-    const zoomUrl = 'https://zoom.us/j/1234567890';
+    // Get appointment data
+    final Map<String, dynamic> appointment = widget.appointment ??
+        (ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?) ??
+        {};
+
+    // Get meeting link from appointment data, fallback to default
+    final String zoomUrl = appointment['meetingLink'] ?? 'https://us05web.zoom.us/j/89523334160?pwd=SsZHVbpIcvyPbR8ww0migXH8UA786L.1';
+
     if (await canLaunchUrl(Uri.parse(zoomUrl))) {
       await launchUrl(Uri.parse(zoomUrl));
       setState(() {
         _isSessionActive = true;
         _hasJoinedSession = true;
       });
+    } else {
+      // Show error if link cannot be opened
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Unable to open meeting link'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
     }
   }
 
@@ -427,6 +443,14 @@ class _SessionPageState extends State<SessionPage> with TickerProviderStateMixin
   }
 
   Widget _buildZoomSection() {
+    // Get appointment data to access meeting link
+    final Map<String, dynamic> appointment = widget.appointment ??
+        (ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?) ??
+        {};
+
+    // Get meeting link from appointment data
+    final String meetingLink = appointment['meetingLink'] ?? 'https://us05web.zoom.us/j/89523334160?pwd=SsZHVbpIcvyPbR8ww0migXH8UA786L.1';
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -504,10 +528,10 @@ class _SessionPageState extends State<SessionPage> with TickerProviderStateMixin
                   size: 20,
                 ),
                 const SizedBox(width: 12),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'https://zoom.us/j/1234567890',
-                    style: TextStyle(
+                    meetingLink,
+                    style: const TextStyle(
                       fontSize: 14,
                       color: Colors.grey,
                       fontFamily: 'Poppins',
