@@ -82,6 +82,7 @@ class _AppointmentPageState extends State<AppointmentPage> {
         'rawStatus': status,
         'canCancel': session['canCancel'] ?? false,
         'rating': null, // TODO: Add rating when available from backend
+        'meetingLink': session['meetingLink'], // Include meeting link from API
       };
     }).toList();
   }

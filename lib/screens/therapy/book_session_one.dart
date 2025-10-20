@@ -729,9 +729,26 @@ class _BookSessionOnePageState extends State<BookSessionOnePage> {
     );
   }
 
+  // Get therapist image with fallback logic
+  ImageProvider _getTherapistImage() {
+    const String baseUrl = 'http://10.0.2.2:3000'; // Android emulator
+    // const String baseUrl = 'http://localhost:3000'; // iOS simulator
+
+    if (therapistData != null) {
+      // Priority: profileImageUrl > image > default
+      if (therapistData['profileImageUrl'] != null &&
+          therapistData['profileImageUrl']!.isNotEmpty) {
+        return NetworkImage('$baseUrl${therapistData['profileImageUrl']}');
+      } else if (therapistData['image'] != null &&
+          therapistData['image']!.isNotEmpty) {
+        return NetworkImage(therapistData['image']);
+      }
+    }
+    return const AssetImage('assets/images/profile.webp') as ImageProvider;
+  }
+
   Widget _buildTherapistCard() {
     final therapistName = therapistData?['name'] ?? 'Therapist';
-    final therapistImage = therapistData?['image'];
     final therapistRating = therapistData?['rating'] ?? 0.0;
     final sessionRate = therapistData?['session_rate'] ?? 0;
 
@@ -744,9 +761,7 @@ class _BookSessionOnePageState extends State<BookSessionOnePage> {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundImage: therapistImage != null && therapistImage.isNotEmpty
-                ? NetworkImage(therapistImage)
-                : AssetImage('assets/images/logowhite.png') as ImageProvider,
+            backgroundImage: _getTherapistImage(),
             radius: 25,
           ),
           SizedBox(width: 12),

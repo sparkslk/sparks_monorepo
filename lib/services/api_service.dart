@@ -51,32 +51,128 @@ class ApiService {
     }
   }
 
-  // Google Sign-In (MOBILE API)
-  static Future<Map<String, dynamic>> googleSignIn(String googleIdToken) async {
+  // ==================== Forgot Password Methods ====================
+
+  /// Request OTP for password reset
+  static Future<Map<String, dynamic>> requestPasswordResetOTP(String email) async {
     try {
-      final uri = Uri.parse('$baseUrl/api/mobile/auth/google');
+      final uri = Uri.parse('$baseUrl/api/mobile/forgot-password');
       final response = await http
           .post(
             uri,
             headers: _headers,
-            body: jsonEncode({'idToken': googleIdToken}),
+            body: jsonEncode({'email': email}),
           )
           .timeout(const Duration(seconds: 10));
 
       final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200 && data['token'] != null) {
-        await _saveTokens(data, response);
-        await _saveUser(data['user']);
-        return {'success': true, 'token': data['token'], 'user': data['user']};
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'],
+          'expiresIn': data['expiresIn'],
+        };
+      } else if (response.statusCode == 429) {
+        // Rate limit exceeded
+        return {
+          'success': false,
+          'message': data['error'],
+          'remainingSeconds': data['remainingSeconds'],
+        };
       } else {
         return {
           'success': false,
-          'message': data['error'] ?? 'Google sign-in failed',
+          'message': data['error'] ?? 'Failed to send verification code',
         };
       }
     } catch (e) {
-      return {'success': false, 'message': 'Google sign-in error: $e'};
+      return {'success': false, 'message': 'Request OTP error: $e'};
+    }
+  }
+
+  /// Verify OTP code
+  static Future<Map<String, dynamic>> verifyPasswordResetOTP(
+    String email,
+    String otp,
+  ) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/mobile/forgot-password/verify');
+      final response = await http
+          .post(
+            uri,
+            headers: _headers,
+            body: jsonEncode({'email': email, 'otp': otp}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'],
+          'verificationToken': data['verificationToken'],
+        };
+      } else if (response.statusCode == 429) {
+        // Max attempts exceeded
+        return {
+          'success': false,
+          'message': data['error'],
+        };
+      } else if (response.statusCode == 401) {
+        // Invalid OTP
+        return {
+          'success': false,
+          'message': data['error'],
+          'remainingAttempts': data['remainingAttempts'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to verify code',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Verify OTP error: $e'};
+    }
+  }
+
+  /// Reset password with verification token
+  static Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String verificationToken,
+    required String newPassword,
+  }) async {
+    try {
+      final uri = Uri.parse('$baseUrl/api/mobile/forgot-password/reset');
+      final response = await http
+          .post(
+            uri,
+            headers: _headers,
+            body: jsonEncode({
+              'email': email,
+              'verificationToken': verificationToken,
+              'newPassword': newPassword,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'message': data['message'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to reset password',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Reset password error: $e'};
     }
   }
 
@@ -84,7 +180,7 @@ class ApiService {
   static Future<Map<String, dynamic>> logout() async {
     try {
       final token = await _storage.read(key: 'jwt_token');
-      final uri = Uri.parse('$baseUrl/api/mobile/auth/logout');
+      final uri = Uri.parse('$baseUrl/api/auth/mobile/logout');
       final response = await http
           .post(
             uri,

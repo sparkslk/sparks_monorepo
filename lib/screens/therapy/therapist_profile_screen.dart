@@ -177,8 +177,8 @@ class _TherapistProfileScreenState extends State<TherapistProfileScreen>
                             const SizedBox(height: 28),
 
                             // Reviews Section
-                            _buildReviewsSection(),
-                            const SizedBox(height: 32),
+                            // _buildReviewsSection(),
+                            // const SizedBox(height: 32),
 
                             // Action Buttons
                             _buildActionButtons(),
