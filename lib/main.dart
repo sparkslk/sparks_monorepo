@@ -4,6 +4,10 @@ import 'screens/welcome/splash_screen.dart';
 import 'screens/welcome/onboarding_screen.dart';
 import 'screens/welcome/login_screen.dart';
 import 'screens/welcome/signup_screen.dart';
+import 'screens/welcome/forgot_password_screen.dart';
+import 'screens/welcome/otp_verification_screen.dart';
+import 'screens/welcome/reset_password_screen.dart';
+import 'screens/welcome/reset_password_success_screen.dart';
 import 'screens/setup/setup_one.dart';
 import 'screens/setup/setup_two.dart';
 import 'screens/setup/setup_three.dart';
@@ -31,6 +35,7 @@ import 'screens/task/add_task.dart';
 import 'screens/task/pomodoro_timer.dart';
 import 'screens/task/completed_task.dart';
 import 'screens/task/day_tasks.dart';
+import 'screens/task/mindfulness_game.dart';
 import 'screens/quiz/adhd_quiz_screen.dart';
 import 'screens/quiz/adhd_quiz_results_screen.dart';
 import 'widgets/not-found.dart';
@@ -61,6 +66,10 @@ class SparksApp extends StatelessWidget {
         '/onboarding': (context) => OnboardingScreen(),
         '/login': (context) => LoginScreen(),
         '/signup': (context) => SignUpScreen(),
+        '/forgot-password': (context) => ForgotPasswordScreen(),
+        '/otp-verification': (context) => OTPVerificationScreen(),
+        '/reset-password': (context) => ResetPasswordScreen(),
+        '/reset-password-success': (context) => ResetPasswordSuccessScreen(),
         '/welcome': (context) => WelcomeScreen(),
         '/adhd_quiz': (context) => AdhdQuizScreen(),
         '/adhd_quiz_results': (context) => AdhdQuizResultsScreen(),
@@ -89,6 +98,7 @@ class SparksApp extends StatelessWidget {
         '/add_task': (context) => NewTasksPage(),
         '/pomodoro_timer': (context) => PomodoroTimerPage(),
         '/completed_tasks': (context) => CompletedTasksPage(),
+        '/mindfulness_game': (context) => MindfulnessGamePage(),
         '/day_tasks': (context) {
           final args =
               ModalRoute.of(context)!.settings.arguments
