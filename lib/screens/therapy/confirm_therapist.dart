@@ -64,7 +64,7 @@ class _ConfirmTherapistPageState extends State<ConfirmTherapistPage> {
                             borderRadius: BorderRadius.circular(40),
                             image: DecorationImage(
                               image: AssetImage(
-                                'assets/images/logowhite.png',
+                                'assets/images/profile.webp',
                               ), // Replace with actual image
                               fit: BoxFit.cover,
                             ),
