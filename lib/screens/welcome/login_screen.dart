@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
-import '../../services/google_signin_service.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -14,7 +13,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool isLoading = false;
-  bool isGoogleLoading = false;
   String? errorMsg;
   bool _obscurePassword = true;
 
@@ -114,54 +112,6 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       setState(() {
         errorMsg = result['message'] ?? 'Login failed. Please try again.';
-      });
-    }
-  }
-
-  // ...existing code...
-
-  void _googleSignIn() async {
-    setState(() {
-      isGoogleLoading = true;
-      errorMsg = null;
-    });
-
-    try {
-      final result = await GoogleSignInService.signInWithGoogle();
-
-      if (result['success']) {
-        // Store Google sign-in data
-        final prefs = await SharedPreferences.getInstance();
-        if (result['user'] != null) {
-          await prefs.setString('user_id', result['user']['id'] ?? '');
-          await prefs.setString('user_email', result['user']['email'] ?? '');
-          await prefs.setString(
-            'user_role',
-            result['user']['role'] ?? 'patient',
-          );
-          await prefs.setString('user_name', result['user']['name'] ?? '');
-        }
-
-        if (result['token'] != null) {
-          await prefs.setString('auth_token', result['token']);
-        }
-
-        await prefs.setBool('is_logged_in', true);
-        Navigator.pushReplacementNamed(context, '/onboarding');
-      } else {
-        setState(() {
-          errorMsg =
-              result['message'] ?? 'Google sign-in failed. Please try again.';
-        });
-      }
-    } catch (e) {
-      print('Google sign-in error: $e');
-      setState(() {
-        errorMsg = 'Google sign-in failed. Please try again.';
-      });
-    } finally {
-      setState(() {
-        isGoogleLoading = false;
       });
     }
   }
@@ -337,61 +287,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                         ),
-                        SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(child: Divider()),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8.0,
-                              ),
-                              child: Text(
-                                'or',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontFamily: 'Poppins',
-                                ),
-                              ),
-                            ),
-                            Expanded(child: Divider()),
-                          ],
-                        ),
-                        SizedBox(height: 10),
-                        OutlinedButton.icon(
-                          onPressed: isGoogleLoading ? null : _googleSignIn,
-                          icon: isGoogleLoading
-                              ? SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.grey,
-                                  ),
-                                )
-                              : Image.asset(
-                                  'assets/images/logowhite.png',
-                                  width: 20,
-                                  height: 20,
-                                ),
-                          label: Text(
-                            isGoogleLoading
-                                ? 'Signing in...'
-                                : 'Continue with Google',
-                            style: TextStyle(
-                              fontFamily: 'Poppins',
-                              fontSize: 14,
-                              letterSpacing: 1.0,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: Size(double.infinity, 44),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 10),
+                        SizedBox(height: 20),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [

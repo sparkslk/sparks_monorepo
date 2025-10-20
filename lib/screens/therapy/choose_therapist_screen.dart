@@ -56,6 +56,23 @@ class _ChooseTherapistScreenState extends State<ChooseTherapistScreen> {
     }
   }
 
+  // Get current therapist image with fallback logic
+  ImageProvider _getCurrentTherapistImage() {
+    const String baseUrl = 'http://10.0.2.2:3000'; // Android emulator
+    // const String baseUrl = 'http://localhost:3000'; // iOS simulator
+
+    if (currentTherapist != null) {
+      // Priority: profileImageUrl > image > default
+      if (currentTherapist['profileImageUrl'] != null &&
+          currentTherapist['profileImageUrl']!.isNotEmpty) {
+        return NetworkImage('$baseUrl${currentTherapist['profileImageUrl']}');
+      } else if (currentTherapist['image'] != null) {
+        return NetworkImage(currentTherapist['image']);
+      }
+    }
+    return const AssetImage('assets/images/profile.webp') as ImageProvider;
+  }
+
   void _filterTherapists(String query) {
     setState(() {
       searchQuery = query;
@@ -80,6 +97,20 @@ class _ChooseTherapistScreenState extends State<ChooseTherapistScreen> {
           return name.contains(searchLower) || specialty.contains(searchLower);
         }).toList();
       }
+
+      // Sort filtered results: current therapist first, then by rating
+      filteredTherapists.sort((a, b) {
+        final aIsCurrent = a['isMyTherapist'] == true;
+        final bIsCurrent = b['isMyTherapist'] == true;
+
+        if (aIsCurrent && !bIsCurrent) return -1;
+        if (!aIsCurrent && bIsCurrent) return 1;
+
+        // If neither or both are current, sort by rating
+        final aRating = (a['rating'] ?? 0.0) as num;
+        final bRating = (b['rating'] ?? 0.0) as num;
+        return bRating.compareTo(aRating);
+      });
     });
   }
 
@@ -163,9 +194,7 @@ class _ChooseTherapistScreenState extends State<ChooseTherapistScreen> {
                                   child: Row(
                                     children: [
                                       CircleAvatar(
-                                        backgroundImage: currentTherapist['image'] != null
-                                            ? NetworkImage(currentTherapist['image'])
-                                            : const AssetImage('assets/images/logowhite.png') as ImageProvider,
+                                        backgroundImage: _getCurrentTherapistImage(),
                                         radius: 24,
                                       ),
                                       const SizedBox(width: 12),
@@ -318,6 +347,7 @@ class _ChooseTherapistScreenState extends State<ChooseTherapistScreen> {
                                               ?.toString() ??
                                           '0',
                                       avatarUrl: therapist['image'],
+                                      profileImageUrl: therapist['profileImageUrl'],
                                       isCurrentTherapist: isCurrentTherapist,
                                       onViewDetails: () {
                                         // Navigate to therapist profile with ID
@@ -347,6 +377,7 @@ class _TherapistCard extends StatelessWidget {
   final double rating;
   final String reviews;
   final String? avatarUrl;
+  final String? profileImageUrl;
   final bool isCurrentTherapist;
   final VoidCallback onViewDetails;
 
@@ -356,9 +387,25 @@ class _TherapistCard extends StatelessWidget {
     required this.rating,
     required this.reviews,
     this.avatarUrl,
+    this.profileImageUrl,
     this.isCurrentTherapist = false,
     required this.onViewDetails,
   });
+
+  // Get the appropriate image provider with fallback logic
+  ImageProvider _getImageProvider() {
+    // Priority: profileImageUrl > avatarUrl > default asset
+    if (profileImageUrl != null && profileImageUrl!.isNotEmpty) {
+      // Get base URL from API service
+      const String baseUrl = 'http://10.0.2.2:3000'; // Android emulator
+      // const String baseUrl = 'http://localhost:3000'; // iOS simulator
+      return NetworkImage('$baseUrl$profileImageUrl');
+    } else if (avatarUrl != null && avatarUrl!.isNotEmpty) {
+      return NetworkImage(avatarUrl!);
+    } else {
+      return const AssetImage('assets/images/profile.webp') as ImageProvider;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -381,10 +428,7 @@ class _TherapistCard extends StatelessWidget {
           Stack(
             children: [
               CircleAvatar(
-                backgroundImage: avatarUrl != null && avatarUrl!.isNotEmpty
-                    ? NetworkImage(avatarUrl!)
-                    : const AssetImage('assets/images/logowhite.png')
-                        as ImageProvider,
+                backgroundImage: _getImageProvider(),
                 radius: 32,
               ),
               if (isCurrentTherapist)

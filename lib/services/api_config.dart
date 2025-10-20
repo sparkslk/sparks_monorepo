@@ -14,10 +14,14 @@ class ApiConfig {
   // API Endpoints
   static const String loginEndpoint = '/api/auth/mobile/credentials';
   static const String signupEndpoint = '/api/auth/signup';
-  static const String googleSignInEndpoint = '/api/auth/signin/google';
-  static const String logoutEndpoint = '/api/auth/signout';
+  static const String logoutEndpoint = '/api/auth/mobile/logout';
   static const String profileEndpoint = '/api/profile';
   static const String adhdQuizEndpoint = '/api/mobile/quiz/adhd';
+
+  // Forgot Password Endpoints
+  static const String forgotPasswordRequestEndpoint = '/api/mobile/forgot-password';
+  static const String forgotPasswordVerifyEndpoint = '/api/mobile/forgot-password/verify';
+  static const String forgotPasswordResetEndpoint = '/api/mobile/forgot-password/reset';
 
   // Request timeouts
   static const Duration requestTimeout = Duration(seconds: 30);
