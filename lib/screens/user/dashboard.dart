@@ -23,6 +23,7 @@ class _DashboardScreenState extends State<DashboardScreen>
   Map<String, dynamic>? _dashboardData;
   bool _isDashboardLoading = true;
   String? _dashboardError;
+  bool _needsAdhdQuiz = false;
 
   // Tasks data
   List<dynamic> _todayTasks = [];
@@ -95,6 +96,7 @@ class _DashboardScreenState extends State<DashboardScreen>
       if (result['success'] == true && mounted) {
         setState(() {
           _dashboardData = result['data'];
+          _needsAdhdQuiz = result['needsAdhdQuiz'] ?? false;
           _isDashboardLoading = false;
         });
       } else {
@@ -226,6 +228,11 @@ class _DashboardScreenState extends State<DashboardScreen>
                 children: [
                   _buildWelcomeSection(),
                   const SizedBox(height: 24),
+                  // Show ADHD quiz prompt if not completed
+                  if (_needsAdhdQuiz) ...[
+                    _buildAdhdQuizPrompt(),
+                    const SizedBox(height: 24),
+                  ],
                   _buildStatsSection(),
                   const SizedBox(height: 24),
                   _buildNextAppointmentSection(),
@@ -269,6 +276,149 @@ class _DashboardScreenState extends State<DashboardScreen>
               fontSize: 16,
               color: Colors.grey[600],
               fontWeight: FontWeight.w400,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdhdQuizPrompt() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF6366F1),
+            const Color(0xFF8B5CF6),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF6366F1).withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.assignment_outlined,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ADHD Assessment',
+                      style: TextStyle(
+                        fontFamily: 'Poppins',
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Required',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Complete this quick assessment to help us understand your needs and provide personalized support.',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 15,
+              color: Colors.white,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.schedule, color: Colors.white70, size: 16),
+              const SizedBox(width: 6),
+              const Text(
+                '5-10 minutes',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Icon(Icons.quiz_outlined, color: Colors.white70, size: 16),
+              const SizedBox(width: 6),
+              const Text(
+                '20 questions',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 14,
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pushNamed(context, '/adhd_quiz');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: const Color(0xFF6366F1),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    'Take Assessment',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(Icons.arrow_forward, size: 20),
+                ],
+              ),
             ),
           ),
         ],

@@ -17,6 +17,7 @@ class ApiConfig {
   static const String googleSignInEndpoint = '/api/auth/signin/google';
   static const String logoutEndpoint = '/api/auth/signout';
   static const String profileEndpoint = '/api/profile';
+  static const String adhdQuizEndpoint = '/api/mobile/quiz/adhd';
 
   // Request timeouts
   static const Duration requestTimeout = Duration(seconds: 30);

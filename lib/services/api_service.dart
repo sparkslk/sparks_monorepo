@@ -1164,4 +1164,64 @@ class ApiService {
       };
     }
   }
+
+  // ==================== ADHD Quiz Methods ====================
+
+  /// Submit ADHD quiz responses
+  static Future<Map<String, dynamic>> submitAdhdQuiz(
+      Map<String, dynamic> quizData) async {
+    try {
+      final response = await authenticatedRequest(
+        'POST',
+        '/api/mobile/quiz/adhd',
+        body: quizData,
+      ).timeout(const Duration(seconds: 15));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['success'] == true) {
+        return {
+          'success': true,
+          'result': data['result'],
+          'disclaimer': data['disclaimer'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to submit quiz'
+        };
+      }
+    } catch (e) {
+      print('Submit ADHD quiz error: $e');
+      return {'success': false, 'message': 'Failed to submit quiz: $e'};
+    }
+  }
+
+  /// Get ADHD quiz result if already completed
+  static Future<Map<String, dynamic>> getAdhdQuizResult() async {
+    try {
+      final response = await authenticatedRequest(
+        'GET',
+        '/api/mobile/quiz/adhd',
+      ).timeout(const Duration(seconds: 10));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return {
+          'success': true,
+          'hasCompleted': data['hasCompleted'] ?? false,
+          'submission': data['submission'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['error'] ?? 'Failed to fetch quiz result'
+        };
+      }
+    } catch (e) {
+      print('Get ADHD quiz result error: $e');
+      return {'success': false, 'message': 'Failed to fetch quiz result: $e'};
+    }
+  }
 }
