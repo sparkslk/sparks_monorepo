@@ -44,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  void _redirectBasedOnRole(String role) {
+  void _redirectBasedOnRole(String role) async {
     switch (role.toLowerCase()) {
       case 'admin':
         Navigator.pushReplacementNamed(context, '/admin-dashboard');
@@ -53,10 +53,40 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacementNamed(context, '/doctor-dashboard');
         break;
       case 'patient':
-        Navigator.pushReplacementNamed(context, '/dashboard');
+        // Check if user needs to complete ADHD quiz
+        await _checkAdhdQuizAndRedirect();
         break;
       default:
         Navigator.pushReplacementNamed(context, '/choose');
+    }
+  }
+
+  Future<void> _checkAdhdQuizAndRedirect() async {
+    try {
+      // Fetch dashboard data to check needsAdhdQuiz flag
+      final dashboardData = await ApiService.getDashboardData();
+
+      if (dashboardData['success'] == true) {
+        final needsAdhdQuiz = dashboardData['needsAdhdQuiz'] ?? false;
+
+        if (needsAdhdQuiz && mounted) {
+          // Redirect to ADHD quiz if not completed
+          Navigator.pushReplacementNamed(context, '/adhd_quiz');
+        } else if (mounted) {
+          // Redirect to dashboard if quiz already completed
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        }
+      } else {
+        // If dashboard data fetch fails, redirect to dashboard anyway
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, '/dashboard');
+        }
+      }
+    } catch (e) {
+      // On error, redirect to dashboard
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/dashboard');
+      }
     }
   }
 

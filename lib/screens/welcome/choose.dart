@@ -1,15 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class ChooseScreen extends StatelessWidget {
   const ChooseScreen({Key? key}) : super(key: key);
-
-  Future<void> _launchURL() async {
-    final Uri url = Uri.parse('https://sparks.help/quiz/');
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      throw Exception('Could not launch $url');
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -147,15 +139,8 @@ class ChooseScreen extends StatelessWidget {
 
                     // Onboarding Card
                     GestureDetector(
-                      onTap: () async {
-                        // Show a brief feedback that the tap was registered
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Opening SPARKS help page...'),
-                            duration: Duration(seconds: 1),
-                          ),
-                        );
-                        await _launchURL();
+                      onTap: () {
+                        Navigator.pushNamed(context, '/adhd_quiz');
                       },
                       child: Container(
                         width: double.infinity,

@@ -7,6 +7,7 @@ import 'screens/welcome/signup_screen.dart';
 import 'screens/setup/setup_one.dart';
 import 'screens/setup/setup_two.dart';
 import 'screens/setup/setup_three.dart';
+import 'screens/setup/welcome_screen.dart';
 import 'screens/user/dashboard.dart';
 import 'screens/user/profile_page.dart';
 import 'screens/user/relaxation_page.dart';
@@ -30,6 +31,8 @@ import 'screens/task/add_task.dart';
 import 'screens/task/pomodoro_timer.dart';
 import 'screens/task/completed_task.dart';
 import 'screens/task/day_tasks.dart';
+import 'screens/quiz/adhd_quiz_screen.dart';
+import 'screens/quiz/adhd_quiz_results_screen.dart';
 import 'widgets/not-found.dart';
 import 'services/notification_service.dart';
 
@@ -58,6 +61,9 @@ class SparksApp extends StatelessWidget {
         '/onboarding': (context) => OnboardingScreen(),
         '/login': (context) => LoginScreen(),
         '/signup': (context) => SignUpScreen(),
+        '/welcome': (context) => WelcomeScreen(),
+        '/adhd_quiz': (context) => AdhdQuizScreen(),
+        '/adhd_quiz_results': (context) => AdhdQuizResultsScreen(),
         '/setup_one': (context) => ProfileSetupStep1(),
         '/setup_two': (context) => ProfileSetupStep2(),
         '/setup_three': (context) => ProfileSetupStep3(),
